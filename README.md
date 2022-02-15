@@ -17,7 +17,7 @@ New dataset from ImageNet:
        , n01728572 (snake), n03095699 (ship), n03417042 (truck)
 - Tasks:
   - generate Captions
-  -
+  - fine tune with multi-modal contrastive loss
 # Week1 Record 
 
 Q: What are desirable properties of pre-trained CLIP?
