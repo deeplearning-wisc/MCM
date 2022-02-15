@@ -9,7 +9,7 @@ Out-of-distribution with language supervision
 
 3) play with SkImages: call `play_with_skimage()`
 
-# Week2 Summary 
+# Week2 Record 
 New dataset from ImageNet: 
 - 10 Classes from ImageNet-1k
     - location: inst-01 /nobackup/ImageNet
@@ -18,7 +18,7 @@ New dataset from ImageNet:
 - Tasks:
   - generate Captions
   -
-# Week1 Summary 
+# Week1 Record 
 
 Q: What are desirable properties of pre-trained CLIP?
 
