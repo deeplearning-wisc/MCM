@@ -1,7 +1,7 @@
 # CLIP_OOD
 Out-of-distribution with language supervision
 
-Currently we have three options: 
+`play_with_clip.py` is the main file. Currently we have three options: 
 
 1) evaluate zero shot performance of CLIP: call `zero_shot_evaluation_CLIP(image_dataset_name, test_labels, ckpt)`
 
