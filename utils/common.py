@@ -10,11 +10,20 @@ import matplotlib.pyplot as plt
 from torchvision.datasets import CIFAR100
 from torchvision.datasets import CIFAR10
 
-def obtain_cifar_classes():
-    cifar100 = CIFAR100('data/cifar100', download=True, train=False)
-    cifar10 = CIFAR10('data/cifar10', download=True, train=False)
+def obtain_cifar_classes(root):
+    cifar100 = CIFAR100( os.path.join(root, 'cifar10'), download=True, train=False)
+    cifar10 = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
     return cifar10.classes, cifar100.classes
 
+def obtain_ImageNet_classes(loc):
+    import json
+    idx2label = []
+    cls2label = {}
+    with open(loc, "r") as read_file:
+        class_idx = json.load(read_file)
+        # idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
+        cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
+    return cls2label.values()
 
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
@@ -64,6 +73,15 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
+def warmup_learning_rate(args, epoch, batch_id, total_batches, optimizer):
+    if args.warm and epoch <= args.warm_epochs:
+        p = (batch_id + (epoch - 1) * total_batches) / \
+            (args.warm_epochs * total_batches)
+        lr = args.warmup_from + p * (args.warmup_to - args.warmup_from)
+
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+            
 def read_file(file_path, root = 'corpus'):
     corpus = []
     with open(os.path.join(root, file_path)) as f:
