@@ -2,12 +2,9 @@
 Out-of-distribution with language supervision
 
 - `play_with_clip.py`: ID zero-shot classification and ID fine-tuning (with img encoder). Currently we have three options: 
-
- -  evaluate zero shot performance of CLIP: call `zero_shot_evaluation_CLIP(image_dataset_name, test_labels, ckpt)`
-
- -  fine-tune CLIP image encoder and test (linear probe): call `linear_probe_evaluation_CLIP(image_dataset_name)`
-
- -  play with SkImages: call `play_with_skimage()`
+   -  evaluate zero shot performance of CLIP: call `zero_shot_evaluation_CLIP(image_dataset_name, test_labels, ckpt)`
+   -  fine-tune CLIP image encoder and test (linear probe): call `linear_probe_evaluation_CLIP(image_dataset_name)`
+   -  play with SkImages: call `play_with_skimage()`
 
 
 - `eval_ood_detection.py`: OOD detection for CIFAR-10, CIFAR-100, and ImageNet-1K as ID. Currently we support only one score:
