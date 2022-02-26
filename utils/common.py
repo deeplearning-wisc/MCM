@@ -15,15 +15,22 @@ def obtain_cifar_classes(root):
     cifar10 = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
     return cifar10.classes, cifar100.classes
 
-def obtain_ImageNet_classes(loc):
-    import json
-    idx2label = []
-    cls2label = {}
-    with open(loc, "r") as read_file:
-        class_idx = json.load(read_file)
-        # idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
-        cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
-    return cls2label.values()
+def obtain_ImageNet_classes(loc, cleaned = False):
+    if not cleaned:
+        import json
+        idx2label = []
+        cls2label = {}
+        with open(loc, "r") as read_file:
+            class_idx = json.load(read_file)
+            # idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
+            cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
+        return cls2label.values()
+    else:
+        with open('loc.npy', 'rb') as f:
+            imagenet_cls = np.load(f)
+        return imagenet_cls
+
+
 
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
