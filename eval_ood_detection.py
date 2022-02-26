@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import clip
 from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet_classes, obtain_cifar_classes
+from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes
 from utils.detection_util import get_and_print_results, get_ood_scores, get_ood_scores_clip, print_measures, set_ood_loader, set_ood_loader_ImageNet
 from utils.train_eval_util import set_model, set_val_loader
 # sys.path.append(os.path.dirname(__file__))
@@ -13,13 +13,13 @@ from utils.train_eval_util import set_model, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--in_dataset', default="ImageNet", type=str, help='in-distribution dataset')
+    parser.add_argument('--in_dataset', default="ImageNet10", type=str, choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[4], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     parser.add_argument('-b', '--batch-size', default=400, type=int,
                             help='mini-batch size')
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/32',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
     parser.add_argument('--name', default = "test_32_new_label", type =str, help = "name of the run to be tested")
 
@@ -41,15 +41,21 @@ def process_args():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
+    elif args.in_dataset == "ImageNet10":
+        args.n_cls = 10
     return args
 
-def main():
-    args = process_args()
-    c10_cls, c100_cls = obtain_cifar_classes(root = '/nobackup/dataset_myf')
-    # imagenet_cls = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_index.json')) # uncleaned labels
-    imagenet_cls = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clearn.npy'), cleaned = True)
+def get_test_labels(args):
+    if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
+        test_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar = args.in_dataset)
+    elif args.in_dataset ==  "ImageNet":
+        # imagenet_cls = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_index.json')) # uncleaned labels
+        test_labels = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clearn.npy'), cleaned = True)
+    elif args.in_dataset ==  "ImageNet10":
+        test_labels = obtain_ImageNet10_classes()
+    return test_labels
 
-    test_labels = imagenet_cls
+def setup_log(args):
     if args.score  in ['MSP']:
         args.log_directory = "results/{in_dataset}/{name}/{score}_new_debug".\
                         format(in_dataset=args.in_dataset, name= args.name, score = args.score)
@@ -65,28 +71,44 @@ def main():
     log.setLevel(logging.DEBUG)
     log.addHandler(fileHandler)
     log.addHandler(streamHandler) 
+    log.debug(f"#########{args.name}############")
+    return log
 
+def setup_seed(args):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     np.random.seed(args.seed)
-    
-    log.debug(f"#########{args.name}############")
-   
-    if args.model == 'resnet34':
+
+def save_as_dataframe(args, out_datasets, fpr_list, auroc_list, aupr_list):
+    fpr_list = [float('{:.2f}'.format(100*fpr)) for fpr in fpr_list]
+    auroc_list = [float('{:.2f}'.format(100*auroc)) for auroc in auroc_list]
+    aupr_list = [float('{:.2f}'.format(100*aupr)) for aupr in aupr_list]
+    import pandas as pd
+    data = {k:v for k,v in zip(out_datasets, zip(fpr_list,auroc_list,aupr_list))}
+    # Specify orient='index' to create the DataFrame using dictionary keys as rows
+    df = pd.DataFrame.from_dict(data, orient='index',
+                       columns=['FPR95', 'AURPC', 'AUPR'])
+    df.to_csv(os.path.join(args.log_directory,f'{args.name}.csv'))
+        
+
+def main():
+
+    args = process_args()
+    setup_seed(args)
+    log = setup_log(args)
+    if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
         pretrained_dict= torch.load(args.ckpt,  map_location='cpu')['state_dict']
         pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
-    elif args.model == "CLIP":
+    elif args.model == "CLIP": #available option
         torch.cuda.set_device(args.gpus[0])
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
-    net.eval()
-    #Case 1
-    # preprocess = None # use the default preprocess in set_loader()
-    #End
-    test_loader = set_val_loader(args, preprocess)
 
+    net.eval()
+    test_loader = set_val_loader(args, preprocess)
+    test_labels = get_test_labels(args)
     # ood_num_examples = len(test_loader.dataset) 
     # num_batches = ood_num_examples // args.batch_size
 
@@ -106,16 +128,16 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
-    elif args.in_dataset == 'ImageNet': 
+    elif args.in_dataset in ['ImageNet','ImageNet10']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
 
     auroc_list, aupr_list, fpr_list = [], [], []
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
-        if args.in_dataset == 'ImageNet':
+        if args.in_dataset in ['ImageNet', 'ImageNet10']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess)
-        else:
+        else: #for CIFAR
             ood_loader = set_ood_loader(args, out_dataset, preprocess)
     
         if args.model == 'CLIP':
@@ -125,6 +147,7 @@ def main():
         get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list)
     log.debug('\n\nMean Test Results')
     print_measures(log, np.mean(auroc_list), np.mean(aupr_list), np.mean(fpr_list), method_name=args.score)
+    save_as_dataframe(args, out_datasets, fpr_list, auroc_list, aupr_list)
 
 if __name__ == '__main__':
     main()

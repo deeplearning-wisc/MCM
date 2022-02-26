@@ -63,6 +63,10 @@ def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
         val_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
+    elif args.in_dataset == "ImageNet10":
+        val_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'val'), transform=preprocess),
+                batch_size=args.batch_size, shuffle=False, **kwargs)
     return val_loader
 
 def set_model(args):

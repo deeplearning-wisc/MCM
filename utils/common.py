@@ -10,10 +10,12 @@ import matplotlib.pyplot as plt
 from torchvision.datasets import CIFAR100
 from torchvision.datasets import CIFAR10
 
-def obtain_cifar_classes(root):
-    cifar100 = CIFAR100( os.path.join(root, 'cifar10'), download=True, train=False)
-    cifar10 = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
-    return cifar10.classes, cifar100.classes
+def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
+    if which_cifar == 'CIFAR-100':
+        cifar = CIFAR100( os.path.join(root, 'cifar10'), download=True, train=False)
+    else:
+        cifar = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
+    return cifar.classes
 
 def obtain_ImageNet_classes(loc, cleaned = False):
     if not cleaned:
@@ -30,7 +32,13 @@ def obtain_ImageNet_classes(loc, cleaned = False):
             imagenet_cls = np.load(f)
         return imagenet_cls
 
-
+def obtain_ImageNet10_classes(loc = None):
+    class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
+        'antelope' : 'n02422699', 'dog':'n02107574', 'frog':'n01641577',  'snake':'n01728572', 
+        'ship':'n03095699', 'truck':'n03417042'}
+    # sort by values
+    class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
+    return class_dict.keys()
 
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
