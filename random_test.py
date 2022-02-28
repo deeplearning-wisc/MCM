@@ -1,5 +1,10 @@
 import json
 import numpy as np
+
+'''
+used for testing new functions
+'''
+
 idx2label = []
 cls2label = {}
 # with open("data/imagenet_class_index.json", "r") as read_file:

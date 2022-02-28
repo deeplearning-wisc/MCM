@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 from torchvision.datasets import CIFAR100
 from torchvision.datasets import CIFAR10
 
+def setup_seed(args):
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    np.random.seed(args.seed)
+
 def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
     if which_cifar == 'CIFAR-100':
         cifar = CIFAR100( os.path.join(root, 'cifar10'), download=True, train=False)
@@ -20,7 +25,7 @@ def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
 def obtain_ImageNet_classes(loc, cleaned = False):
     if not cleaned:
         import json
-        idx2label = []
+        # idx2label = []
         cls2label = {}
         with open(loc, "r") as read_file:
             class_idx = json.load(read_file)
@@ -28,7 +33,7 @@ def obtain_ImageNet_classes(loc, cleaned = False):
             cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
         return cls2label.values()
     else:
-        with open('loc.npy', 'rb') as f:
+        with open(loc, 'rb') as f:
             imagenet_cls = np.load(f)
         return imagenet_cls
 
