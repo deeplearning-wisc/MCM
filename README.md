@@ -12,6 +12,11 @@ Out-of-distribution with language supervision
 
 - `play_with_clip.ipynb`: contains various visualization methods for trained CLIP model.
 
+- `captions.ipynb`: Notebook used to generated captions using the Oscar model from Microsoft. This assumes you have
+cloned and installed [Oscar](https://github.com/microsoft/Oscar) and
+[scene\_graph\_benchmark](https://github.com/microsoft/scene_graph_benchmark) in the directory running the notebook
+from (you can change these directories in the notebook).
+
 # Week2 Record 
 New dataset from ImageNet: 
 - 10 Classes from ImageNet-1k
