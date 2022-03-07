@@ -105,8 +105,8 @@ def play_with_skimage(ckpt = "ViT-B/16"):
 
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
-    parser.add_argument('--img_dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100'], help='img dataset')
+    parser.add_argument('--img_dataset', type=str, default='CIFAR-10',
+                        choices=['CIFAR-10', 'CIFAR-100'], help='img dataset')
     parser.add_argument('--ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16'], help='which pretrained img encoder to use')
     parser.add_argument('--feat_dim', type=int, default=784, help='feat dim')
@@ -134,16 +134,16 @@ def parse_option():
 
 if __name__ == '__main__':
     args = parse_option()
-    c10_cls, c100_cls = obtain_cifar_classes()
-    if args.img_dataset == 'cifar10':
+    cifar_cls = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar=args.img_dataset)
+    if args.img_dataset == 'CIFAR-10':
         args.n_cls = 10
-    elif args.img_dataset == 'cifar100':
+    elif args.img_dataset == 'CIFAR-100':
         args.n_cls = 100
 
     args.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     args.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}_{}'.\
-        format(args.dataset, args.ckpt, args.learning_rate, args.weight_decay,
+        format(args.img_dataset, args.ckpt, args.learning_rate, args.weight_decay,
                args.batch_size, args.name)
     
     if args.cosine:
@@ -167,8 +167,9 @@ if __name__ == '__main__':
     #sample = random.sample(c100_cls, len)
     #test_labels =  c10_cls + sample
 
-    corpus = read_file('noun_en_test.txt')
-    test_labels = c10_cls + corpus
+    # corpus = read_file('noun_en_test.txt')
+    # test_labels = cifar_cls + corpus
+    test_labels = cifar_cls
     zero_shot_evaluation_CLIP(args.img_dataset, test_labels, args.ckpt)
     # linear_probe_evaluation_CLIP_gpu(args)
     # play_with_skimage()

@@ -47,13 +47,32 @@ def obtain_ImageNet10_classes(loc = None):
 
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
-    if image_dataset_name.startswith('cifar'):
-      if image_dataset_name == 'cifar100':
+    if image_dataset_name.startswith('CIFAR'):
+      if image_dataset_name == 'CIFAR-100':
           image_dataset = CIFAR100(data_dir, transform=preprocess, download=True, train=train)
-      elif image_dataset_name == 'cifar10':
+      elif image_dataset_name == 'CIFAR-10':
           image_dataset = CIFAR10(data_dir, transform=preprocess, download=True, train=train)
     dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=4)
     return dataloader
+
+def get_features(model, dataloader, device, normalize = False, to_np = True):
+    '''
+    extract all image features from the dataset （unnormalized)
+    V1.1: only supports CPU
+    '''
+    all_features = []
+    all_labels = []
+    with torch.no_grad():
+        for images, labels in tqdm(dataloader):
+            features = model.encode_image(images.to(device))
+            if normalize: 
+                features /= features.norm(dim=-1, keepdim=True)
+            all_features.append(features)
+            all_labels.append(labels)
+    if to_np:
+        return torch.cat(all_features).cpu().numpy(), torch.cat(all_labels).cpu().numpy()
+    else: 
+        return torch.cat(all_features), torch.cat(all_labels)
 
 def evaluate_classification(dataloader, test_labels, model, preprocess, device):
     tqdm_object = tqdm(dataloader, total=len(dataloader))
@@ -196,22 +215,6 @@ def plot_similarity(similarity, count, original_images, texts):
     plt.tight_layout()
     plt.savefig('cosine.png')
 
-def get_features(model, dataloader, device):
-    '''
-    extract all image and text features from the dataset
-    V1.1: only supports CPU
-    '''
-    all_features = []
-    all_labels = []
-    with torch.no_grad():
-        for images, labels in tqdm(dataloader):
-            features = model.encode_image(images.to(device))
-
-            all_features.append(features)
-            all_labels.append(labels)
-
-    return torch.cat(all_features).cpu().numpy(), torch.cat(all_labels).cpu().numpy()
-
 def create_subset_imagenet(class_ids, src_root = '/nobackup/ImageNet/val', dst_root = 'data'):
     import shutil
     dst_dir = os.path.join(dst_root, 'ImageNetS')
@@ -224,7 +227,47 @@ def create_subset_imagenet(class_ids, src_root = '/nobackup/ImageNet/val', dst_r
             if not os.path.exists(dst_path):
                 shutil.copytree(src_path, dst_path)
                 
+def examine_scores_clip(net, loader, test_labels, softmax = True):
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _right_score = []
+    _wrong_score = []
 
+    _lables = []
+    _smax_scores = []
+
+    tqdm_object = tqdm(loader, total=len(loader))
+    text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+
+    with torch.no_grad():
+        for batch_idx, (images, labels) in enumerate(tqdm_object):
+            labels = labels.long().cuda()
+            images = images.cuda()
+            image_features = net.encode_image(images)
+            text_features = net.encode_text(text_inputs)
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+            text_features /= text_features.norm(dim=-1, keepdim=True)   
+            output = image_features @ text_features.T
+            if softmax:
+                smax = to_np(F.softmax(output, dim=1))
+            else:
+                smax = to_np(output)
+            
+            _smax_scores.append(smax)
+            labels.append(labels)
+
+            preds = np.argmax(smax, axis=1)
+            targets = labels.cpu().numpy().squeeze()
+            right_indices = preds == targets
+            wrong_indices = np.invert(right_indices)
+
+            _right_score.append(-np.max(smax[right_indices], axis=1))
+            _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+    right_score, wrong_score = concat(_right_score), concat(_wrong_score)
+    num_right = len(right_score)
+    num_wrong = len(wrong_score)
+    print('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
+    return concat(_smax_scores), concat(_lables)
     
 class AverageMeter(object):
     def __init__(self):

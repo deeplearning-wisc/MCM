@@ -5,9 +5,13 @@ from tqdm import tqdm
 import clip
 import torchvision
 import sklearn.metrics as sk
+from utils.common import get_features
 import utils.svhn_loader as svhn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
+import faiss
+
+from utils.train_eval_util import set_train_loader
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
@@ -190,7 +194,7 @@ def get_ood_scores(args, net, loader, in_dist=False):
     else:
         return concat(_score)[:len(loader.dataset)].copy()
 
-def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = False):
+def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
@@ -216,17 +220,15 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 smax = to_np(F.softmax(output, dim=1))
             else:
                 smax = to_np(output)
-            # embeddings.append(embed.cpu().numpy())
-            # targets_embed.append(target)
 
-            if args.use_xent:
-                _score.append(to_np((output.mean(1) - torch.logsumexp(output, dim=1))))
-            else:
-                if args.score == 'energy':
-                    #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
-                    _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
-                else: # original MSP and Mahalanobis (but Mahalanobis won't need this returned)
-                    _score.append(-np.max(smax, axis=1)) 
+            if args.score == 'energy':
+                #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
+                _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
+            elif args.score == 'entropy':  
+                from scipy.stats import entropy
+                _score.append(entropy(smax)) 
+            else: # original MSP and Mahalanobis (but Mahalanobis won't need this returned)
+                _score.append(-np.max(smax, axis=1)) 
 
             if in_dist:
                 preds = np.argmax(smax, axis=1)
@@ -234,89 +236,115 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 right_indices = preds == targets
                 wrong_indices = np.invert(right_indices)
 
-                if args.use_xent:
-                    _right_score.append(to_np((output.mean(1) - torch.logsumexp(output, dim=1)))[right_indices])
-                    _wrong_score.append(to_np((output.mean(1) - torch.logsumexp(output, dim=1)))[wrong_indices])
-                else:
-                    _right_score.append(-np.max(smax[right_indices], axis=1))
-                    _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+                _right_score.append(-np.max(smax[right_indices], axis=1))
+                _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
 
     if in_dist:
         return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
     else:
-        return concat(_score)[:len(loader.dataset)].copy()
+        return concat(_score)[:len(loader.dataset)].copy()   
 
-def obtain_feature_from_loader(net, loader, layer_idx, embedding_dim, num_batches):
-    out_features = torch.zeros((0, embedding_dim), device = 'cuda')
+def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
     with torch.no_grad():
-        for batch_idx, (data, target) in enumerate(loader):
-            if num_batches is not None:
-                if batch_idx >= num_batches:
-                    break
-            data, target = data.cuda(), target.cuda()
-            out_feature = net.intermediate_forward(data, layer_idx) 
-            if layer_idx == 0: # out_feature: bz, 512, 4, 4
-                out_feature = out_feature.view(out_feature.size(0), out_feature.size(1), -1) #bz, 512, 16
-                out_feature = torch.mean(out_feature, 2) # bz, 512
-                out_feature =F.normalize(out_feature, dim = 1)
-            out_features = torch.cat((out_features,out_feature), dim = 0)
-    return out_features       
-
-def knn(layer_idx = 0, num_classes = 100):
-    args = process_args()
-    train_loader, test_loader = set_loader(args, eval = True)
-    # args.ckpt = 'yiyou_checkpoint_500.pth.tar'
-    pretrained_dict= torch.load(args.ckpt,  map_location='cpu')['state_dict']
-    
-    pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
-    net, criterion = set_model(args)
-    net.load_state_dict(pretrained_dict)
-    net.eval()
-    ood_num_examples = len(test_loader.dataset) 
-    num_batches = ood_num_examples // args.batch_size
-    if layer_idx == 1:
-        embedding_dim = 128
-    elif layer_idx == 0:
-        embedding_dim = 512 #for resnet-18 and34
-    ftrain = obtain_feature_from_loader(net, train_loader, layer_idx, embedding_dim, num_batches = None)
-    ftest = obtain_feature_from_loader(net, test_loader, layer_idx, embedding_dim, num_batches = None)
-    print('preprocessing ID finished')
-    # out_datasets = [ 'SVHN', 'places365', 'iSUN', 'dtd', 'LSUN']
-    out_datasets = [ 'cifar10']
-    food_all = {}
-    auroc_list, aupr_list, fpr_list = [], [], []
-    for out_dataset in out_datasets:
-        ood_loader = set_ood_loader(args, out_dataset)
-        ood_feat = obtain_feature_from_loader(net, ood_loader, layer_idx, embedding_dim, num_batches)
-        food_all[out_dataset] = ood_feat
-        print(f'preprocessing OOD {out_dataset} finished')
+        text_templates = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda())
+        text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
+        text_dataset = TextDataset(text_inputs, text_df["cls"])
+        text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
+        tqdm_object = tqdm(text_loader, total=len(text_loader))
+        for batch_idx, (texts, labels) in enumerate(tqdm_object):
+            text_features = net.encode_text(texts)
+            output = text_features @ text_templates.T
+            smax = to_np(F.softmax(output, dim=1))
+            _score.append(-np.max(smax, axis=1)) 
+        return concat(_score).copy()
+       
+def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    ftrain, _ = get_features(net, train_loader, device)
+    ftest,_ = get_features(net, test_loader, device)
     index = faiss.IndexFlatL2(ftrain.shape[1])
-    index.add(ftrain.cpu().numpy())
+    ftrain = ftrain.astype('float32')
+    ftest = ftest.astype('float32')
+    index.add(ftrain)
     index_bad = index
-    ################### Using KNN distance Directly ###################
-    K = 200
-    D, _ = index_bad.search(ftest.cpu().numpy(), K, )
-    scores_in = -D[:,-1]
-    # scores_in = -D.mean(1)
-    # all_results = []
-    for ood_dataset, food in food_all.items():
-        print(f"Evaluting OOD dataset {ood_dataset}")
-        D, _ = index_bad.search(food.cpu().numpy(), K)
-        scores_ood_test = -D[:,-1]
-        # results = metrics.cal_metric(scores_in, scores_ood_test)
-        # all_results.append(results)
-        aurocs, auprs, fprs = [], [], []
-        # out as pos 
-        # measures = get_measures(scores_ood_test, scores_in)
-        measures = get_measures(scores_in, scores_ood_test)
-        aurocs.append(measures[0]); auprs.append(measures[1]); fprs.append(measures[2])
-        print(scores_in[:3], scores_ood_test[:3])
-        auroc = np.mean(aurocs); aupr = np.mean(auprs); fpr = np.mean(fprs)
-        auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr)
-        print_measures(None, auroc, aupr, fpr, args.method_name)
-        
-    print("AVG")
-    print_measures(None, np.mean(auroc_list), np.mean(aupr_list), np.mean(fpr_list), method_name=args.method_name)
+    D, _ = index_bad.search(ftest, args.K, )
+    scores = D[:,-1]
+    return scores, index_bad
+
+def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    food, _ = get_features(net, ood_loader, device)
+    food = food.astype('float32')
+    D, _ = index_bad.search(food, args.K)
+    scores_ood = D[:,-1]
+    return scores_ood
+
+def get_mean_prec(args, net, preprocess):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    feat_dim = 512
+    # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
+    classwise_mean = torch.empty(args.n_cls, feat_dim)
+    all_features = []
+    classwise_features = []
+    for _ in range(args.n_cls):
+       classwise_features.append([]) 
+    train_loader = set_train_loader(args, preprocess, batch_size = 1) #bz = 1; no Shuffle
+    with torch.no_grad():
+        for image, label in tqdm(train_loader):
+            features = net.encode_image(image.to(device))
+            if args.normalize: 
+                features /= features.norm(dim=-1, keepdim=True)
+            #construct class-conditional sample matrix
+            # classwise_features[label.item()] = torch.cat((classwise_features[label.item()], features.view(1, -1)), 0)
+            classwise_features[label.item()].append(features.view(1, -1))
+            all_features.append(features)
+    for cls in range(args.n_cls):
+        classwise_features[cls] = torch.cat(classwise_features[cls], 0)
+        classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+    # now, classwise_mean is of shape [10, 512]
+    all_features = torch.cat(all_features, 0)
+    cov = torch.cov(all_features.T.double()) # shape: [512, 512]
+    # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
+    precision = torch.linalg.inv(cov).float()
+    print(f'cond number: {torch.linalg.cond(precision)}')
+
+    return classwise_mean, precision
+
+def get_mean(args, net, preprocess):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    feat_dim = 512
+    # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
+    classwise_mean = torch.empty(args.n_cls, feat_dim)
+    classwise_features = []
+    for _ in range(args.n_cls):
+       classwise_features.append([]) 
+    train_loader = set_train_loader(args, preprocess, batch_size = 1) #bz = 1; no Shuffle
+    with torch.no_grad():
+        for image, label in tqdm(train_loader):
+            features = net.encode_image(image.to(device))
+            if args.normalize: 
+                features /= features.norm(dim=-1, keepdim=True)
+            #construct class-conditional sample matrix
+            # classwise_features[label.item()] = torch.cat((classwise_features[label.item()], features.view(1, -1)), 0)
+            classwise_features[label.item()].append(features.view(1, -1))
+    for cls in range(args.n_cls):
+        classwise_features[cls] = torch.cat(classwise_features[cls], 0)
+        classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+    return classwise_mean
+            
+
+def get_prec(args, net, train_loader):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    ftrain, _ = get_features(net, train_loader, device, normalize = args.normalize, to_np=False)
+    cov = torch.cov(ftrain.T.double())
+    # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
+    precision = torch.linalg.inv(cov).float()
+    print(f'cond number: {torch.linalg.cond(precision)}')
+
+    return precision
 
 def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list):
     '''
@@ -329,7 +357,23 @@ def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list,
     else:
         measures = get_measures(-in_score, -out_score)
     aurocs.append(measures[0]); auprs.append(measures[1]); fprs.append(measures[2])
-    print(f'in score samples: {in_score[:3]}, out score samples: {out_score[:3]}')
+    print(f'in score samples (random sampled): {in_score[:3]}, out score samples: {out_score[:3]}')
+    # print(f'in score samples (min): {in_score[-3:]}, out score samples: {out_score[-3:]}')
     auroc = np.mean(aurocs); aupr = np.mean(auprs); fpr = np.mean(fprs)
     auroc_list.append(auroc); aupr_list.append(aupr); fpr_list.append(fpr) # used to calculate the avg over multiple OOD test sets
     print_measures(log, auroc, aupr, fpr, args.score)
+
+class TextDataset(torch.utils.data.Dataset):
+  def __init__(self, texts, labels):
+        self.labels = labels
+        self.texts = texts
+
+  def __len__(self):
+        return len(self.texts)
+
+  def __getitem__(self, index):
+        # Load data and get label
+        X = self.texts[index]
+        y = self.labels[index]
+
+        return X, y

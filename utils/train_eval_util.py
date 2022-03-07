@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
-def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
+def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', batch_size = None):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
@@ -26,14 +26,22 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
             normalize
             ])
     kwargs = {'num_workers': 8, 'pin_memory': True}
+    shuffle = False #eval case: when we use training set to get class-wise mean and cov
+    if batch_size is None:  #normal case: used for trainign
+        batch_size = args.batch_size
+        shuffle = True
     if args.in_dataset == "CIFAR-10":
         train_loader = torch.utils.data.DataLoader(
                     datasets.CIFAR10( os.path.join(root, 'cifar10'), train=True, download=True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=True, **kwargs)
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "CIFAR-100":
         train_loader = torch.utils.data.DataLoader(
                     datasets.CIFAR100(os.path.join(root, 'cifar100'), train=True, download=True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=True, **kwargs)
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif args.in_dataset == "ImageNet10":
+        train_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
+                batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     return train_loader
 
