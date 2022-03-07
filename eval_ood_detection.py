@@ -128,6 +128,9 @@ def main():
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 else:
                     out_score = get_ood_scores(args, net, ood_loader)
+        from scipy import stats
+        log.debug(f"in scores: {stats.describe(in_score)}")
+        log.debug(f"out scores: {stats.describe(out_score)}")
         plot_distribution(args, in_score, out_score, out_dataset)
         get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list)
     log.debug('\n\nMean Test Results')

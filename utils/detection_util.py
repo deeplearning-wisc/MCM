@@ -257,7 +257,8 @@ def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
         for batch_idx, (texts, labels) in enumerate(tqdm_object):
             text_features = net.encode_text(texts)
             output = text_features @ text_templates.T
-            smax = to_np(F.softmax(output, dim=1))
+            # _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1)))) 
+            smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1)) 
         return concat(_score).copy()
        
