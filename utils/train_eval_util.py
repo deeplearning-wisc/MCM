@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
-def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', batch_size = None):
+def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', batch_size = None, shuffle = False):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
@@ -26,7 +26,6 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
             normalize
             ])
     kwargs = {'num_workers': 8, 'pin_memory': True}
-    shuffle = False #eval case: when we use training set to get class-wise mean and cov
     if batch_size is None:  #normal case: used for trainign
         batch_size = args.batch_size
         shuffle = True

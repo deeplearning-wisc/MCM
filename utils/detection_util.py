@@ -280,26 +280,46 @@ def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
             _score.append(-np.max(smax, axis=1)) 
         return concat(_score).copy()
 
-def get_retrival_scores_clip(args, net, train_loader, text_df, test_labels, in_dist=True):
+def generate_img_template(args, net, preprocess, num_per_cls, template_dir):
+    from collections import defaultdict
+    per_class_counter = defaultdict(int)
+    classwise_features = []
+    for _ in range(args.n_cls):
+       classwise_features.append([]) 
+    train_loader = set_train_loader(args, preprocess, batch_size = 1, shuffle=True) #bz = 1; introduce some randomness for template selection
+    with torch.no_grad():
+        for image, label in tqdm(train_loader):
+            if per_class_counter[label.item()] < num_per_cls:
+                features = net.encode_image(image.cuda())
+                features /= features.norm(dim=-1, keepdim=True)
+                classwise_features[label.item()].append(features.view(1, -1))
+                per_class_counter[label.item()] += 1
+    for cls in range(args.n_cls):
+        classwise_features[cls] = torch.cat(classwise_features[cls], 0)
+    concat_features = torch.cat(classwise_features, 0)
+    torch.save(concat_features, os.path.join(template_dir,f'img_template_{num_per_cls}.pt'))
+    return concat_features
+
+def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, generate = False, template_dir = 'img_templates'):
+    if generate:
+        image_templates = generate_img_template(args, net, preprocess, num_per_cls, template_dir)
+    else: 
+        image_templates = torch.load(os.path.join(template_dir,f'img_template_{num_per_cls}.pt'), map_location= 'cpu').cuda()
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
-    with torch.no_grad():
-        text_templates = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda())
-        text_templates /= text_templates.norm(dim=-1, keepdim=True)
-
-        text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
-        text_dataset = TextDataset(text_inputs, text_df["cls"])
-        text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
-        tqdm_object = tqdm(text_loader, total=len(text_loader))   
+    text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
+    text_dataset = TextDataset(text_inputs, text_df["cls"])
+    text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
+    tqdm_object = tqdm(text_loader, total=len(text_loader)) 
+    with torch.no_grad():  
         for batch_idx, (texts, labels) in enumerate(tqdm_object):
             text_features = net.encode_text(texts)
             text_features /= text_features.norm(dim=-1, keepdim=True)   
-            output = text_features @ text_templates.T
-            # _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1)))) 
-            # smax  = to_np(output/ args.T)
-            smax = to_np(F.softmax(output/ args.T, dim=1))
-            _score.append(-np.max(smax, axis=1)) 
+            output = text_features @ image_templates.T
+            values, indices = torch.topk(output, k = num_per_cls, dim = 1)
+            score = to_np(torch.mean(values, dim = 1))
+            _score.append(-score)
         return concat(_score).copy()
        
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
@@ -423,14 +443,14 @@ class TextDataset(torch.utils.data.Dataset):
     '''
     used for MIPC score. wrap up the list of captions as Dataset to enable batch processing
     '''
-  def __init__(self, texts, labels):
+    def __init__(self, texts, labels):
         self.labels = labels
         self.texts = texts
 
-  def __len__(self):
+    def __len__(self):
         return len(self.texts)
 
-  def __getitem__(self, index):
+    def __getitem__(self, index):
         # Load data and get label
         X = self.texts[index]
         y = self.labels[index]

@@ -6,7 +6,7 @@ import clip
 # from torchvision.transforms import transforms
 from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
 from utils.detection_util import (get_MIPC_scores_clip, get_and_print_results, get_knn_scores_from_clip_img_encoder_id, get_knn_scores_from_clip_img_encoder_ood, 
-                            get_mean_prec, get_ood_scores, get_ood_scores_clip,  print_measures, set_ood_loader, set_ood_loader_ImageNet)
+                            get_mean_prec, get_ood_scores, get_ood_scores_clip, get_retrival_scores_clip,  print_measures, set_ood_loader, set_ood_loader_ImageNet)
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
 from utils.train_eval_util import set_model, set_train_loader, set_val_loader
@@ -17,17 +17,17 @@ def process_args():
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10'], help='in-distribution dataset')
-    parser.add_argument('--gpus', default=[2], nargs='*', type=int,
+    parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     parser.add_argument('-b', '--batch-size', default=200, type=int,
                             help='mini-batch size')
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "test_normalize", type =str, help = "name of the run to be tested")
+    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
     parser.add_argument('--epoch', default ="", type=str,
                             help='which epoch to test')
-    parser.add_argument('--score', default='knn', type=str, help='score options: MSP|energy|knn|MIPC')
+    parser.add_argument('--score', default='retrival', type=str, help='score options: MSP|energy|knn|MIPC|retrival')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
     parser.add_argument('--T', default = 100, type =float, help = "temperature for energy score")    
@@ -74,10 +74,13 @@ def main():
 
     net.eval()
     test_labels = get_test_labels(args)
-    if args.score == 'MIPC':
+    if args.score in ['MIPC', 'retrival']:
         captions_dir = 'gen_captions'
         text_df = prepare_dataframe(captions_dir, dataset_name = 'imagenet_val') # currently only supports ImageNet10 captions
-        in_score = get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True)
+        if args.score == 'MIPC':
+            in_score = get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True)
+        elif args.score == 'retrival':
+            in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
         test_loader = set_val_loader(args, preprocess)
         train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
@@ -115,6 +118,9 @@ def main():
         if args.score == 'MIPC':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_MIPC_scores_clip(args, net, ood_text_df, test_labels)
+        elif args.score == 'retrival':
+            ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
+            out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else:
             if args.in_dataset in ['ImageNet', 'ImageNet10']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess)
