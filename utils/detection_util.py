@@ -10,7 +10,7 @@ import utils.svhn_loader as svhn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
 import faiss
-
+from scipy import stats
 from utils.train_eval_util import set_train_loader
 
 
@@ -300,7 +300,7 @@ def generate_img_template(args, net, preprocess, num_per_cls, template_dir):
     torch.save(concat_features, os.path.join(template_dir,f'img_template_{num_per_cls}.pt'))
     return concat_features
 
-def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, generate = False, template_dir = 'img_templates'):
+def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, generate = False, template_dir = 'img_templates', option = 'mode'):
     if generate:
         image_templates = generate_img_template(args, net, preprocess, num_per_cls, template_dir)
     else: 
@@ -317,9 +317,15 @@ def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, genera
             text_features = net.encode_text(texts)
             text_features /= text_features.norm(dim=-1, keepdim=True)   
             output = text_features @ image_templates.T
-            values, indices = torch.topk(output, k = num_per_cls, dim = 1)
-            score = to_np(torch.mean(values, dim = 1))
-            _score.append(-score)
+            values, indices = torch.topk(output, k = num_per_cls, dim = 1) # by default top k largest
+            if option == 'avg': # avg of top k retrived inner product scores
+                score = to_np(torch.mean(values, dim = 1))
+                _score.append(-score)
+            elif option == 'mode':
+                classes_id = indices // num_per_cls
+                mode, count = stats.mode(to_np(classes_id), axis = 1)
+                _score.append(-count.squeeze())
+
         return concat(_score).copy()
        
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):

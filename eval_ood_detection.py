@@ -24,7 +24,7 @@ def process_args():
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
+    parser.add_argument('--name', default = "mode", type =str, help = "name of the run to be tested")
     parser.add_argument('--epoch', default ="", type=str,
                             help='which epoch to test')
     parser.add_argument('--score', default='retrival', type=str, help='score options: MSP|energy|knn|MIPC|retrival')
