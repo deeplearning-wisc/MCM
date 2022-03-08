@@ -15,6 +15,9 @@ from utils.train_eval_util import set_train_loader
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
+    '''
+    set OOD loader for CIFAR scale datasets
+    '''
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
@@ -46,6 +49,9 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
     return testloaderOut
 
 def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dataset_myf_ImageNet_OOD'):
+    '''
+    set OOD loader for ImageNet scale datasets
+    '''
     if out_dataset == 'iNaturalist':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'iNaturalist'), transform=preprocess)
     elif out_dataset == 'SUN':
@@ -147,6 +153,9 @@ def get_measures(_pos, _neg, recall_level=0.95):
     return auroc, aupr, fpr
 
 def get_ood_scores(args, net, loader, in_dist=False):
+    '''
+    useless for now. just for reference (calculate OOD score based on CNN backbones)
+    '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
@@ -195,6 +204,9 @@ def get_ood_scores(args, net, loader, in_dist=False):
         return concat(_score)[:len(loader.dataset)].copy()
 
 def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
+    '''
+    used for scores based on img-caption product inner products: MSP (MIP), entropy, energy score. 
+    '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
@@ -217,9 +229,9 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
             output = image_features @ text_features.T
             if softmax:
-                smax = to_np(F.softmax(output, dim=1))
+                smax = to_np(F.softmax(output/ args.T, dim=1))
             else:
-                smax = to_np(output)
+                smax = to_np(output/ args.T)
 
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
@@ -245,27 +257,58 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
         return concat(_score)[:len(loader.dataset)].copy()   
 
 def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
+    '''
+    used for MIPC score. take the maximum of caption input to caption template inner product.
+    '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
     with torch.no_grad():
         text_templates = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda())
+        text_templates /= text_templates.norm(dim=-1, keepdim=True)
         text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
         text_dataset = TextDataset(text_inputs, text_df["cls"])
         text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
-        tqdm_object = tqdm(text_loader, total=len(text_loader))
+        tqdm_object = tqdm(text_loader, total=len(text_loader))   
         for batch_idx, (texts, labels) in enumerate(tqdm_object):
             text_features = net.encode_text(texts)
+            text_features /= text_features.norm(dim=-1, keepdim=True)   
             output = text_features @ text_templates.T
             # _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1)))) 
+            # smax  = to_np(output/ args.T)
+            smax = to_np(F.softmax(output/ args.T, dim=1))
+            _score.append(-np.max(smax, axis=1)) 
+        return concat(_score).copy()
+
+def get_retrival_scores_clip(args, net, train_loader, text_df, test_labels, in_dist=True):
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    with torch.no_grad():
+        text_templates = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda())
+        text_templates /= text_templates.norm(dim=-1, keepdim=True)
+
+        text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
+        text_dataset = TextDataset(text_inputs, text_df["cls"])
+        text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
+        tqdm_object = tqdm(text_loader, total=len(text_loader))   
+        for batch_idx, (texts, labels) in enumerate(tqdm_object):
+            text_features = net.encode_text(texts)
+            text_features /= text_features.norm(dim=-1, keepdim=True)   
+            output = text_features @ text_templates.T
+            # _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1)))) 
+            # smax  = to_np(output/ args.T)
             smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1)) 
         return concat(_score).copy()
        
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
+    '''
+    used for KNN score. ID dataset only 
+    '''
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    ftrain, _ = get_features(net, train_loader, device)
-    ftest,_ = get_features(net, test_loader, device)
+    ftrain, _ = get_features(net, train_loader, device, args.normalize)
+    ftest,_ = get_features(net, test_loader, device, args.normalize)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -276,14 +319,20 @@ def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader
     return scores, index_bad
 
 def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
+    '''
+    used for KNN score. OOD dataset only
+    '''
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    food, _ = get_features(net, ood_loader, device)
+    food, _ = get_features(net, ood_loader, device, args.normalize)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]
     return scores_ood
 
 def get_mean_prec(args, net, preprocess):
+    '''
+    used for Mahalanobis score. Calculate class-wise mean and inverse covariance matrix
+    '''
     device = "cuda" if torch.cuda.is_available() else "cpu"
     feat_dim = 512
     # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
@@ -315,6 +364,9 @@ def get_mean_prec(args, net, preprocess):
     return classwise_mean, precision
 
 def get_mean(args, net, preprocess):
+    '''
+    used for Maha score. calculate class-wise mean only
+    '''
     device = "cuda" if torch.cuda.is_available() else "cpu"
     feat_dim = 512
     # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
@@ -338,6 +390,9 @@ def get_mean(args, net, preprocess):
             
 
 def get_prec(args, net, train_loader):
+    '''
+    used for Maha score. calculate inverse covariance matrix only
+    '''
     device = "cuda" if torch.cuda.is_available() else "cpu"
     ftrain, _ = get_features(net, train_loader, device, normalize = args.normalize, to_np=False)
     cov = torch.cov(ftrain.T.double())
@@ -365,6 +420,9 @@ def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list,
     print_measures(log, auroc, aupr, fpr, args.score)
 
 class TextDataset(torch.utils.data.Dataset):
+    '''
+    used for MIPC score. wrap up the list of captions as Dataset to enable batch processing
+    '''
   def __init__(self, texts, labels):
         self.labels = labels
         self.texts = texts

@@ -15,8 +15,8 @@ def load_scores(args, dataset_name):
     return scores
     
 def setup_log(args):
-    args.log_directory = "results/{in_dataset}/{name}/{score}_new_debug".\
-                        format(in_dataset=args.in_dataset, name= args.name, score = args.score)
+    args.log_directory = "results/{in_dataset}/{score}/{T}_{name}".\
+                        format(in_dataset=args.in_dataset, name= args.name, score = args.score, T = args.T)
     if not os.path.exists(args.log_directory):
         os.makedirs(args.log_directory)
     

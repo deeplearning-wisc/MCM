@@ -15,29 +15,28 @@ from utils.train_eval_util import set_model, set_train_loader, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--in_dataset', default="ImageNet10", type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10'], help='in-distribution dataset')
-    parser.add_argument('--gpus', default=[4], nargs='*', type=int,
+    parser.add_argument('--gpus', default=[2], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
-    parser.add_argument('-b', '--batch-size', default=100, type=int,
+    parser.add_argument('-b', '--batch-size', default=200, type=int,
                             help='mini-batch size')
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
+    parser.add_argument('--name', default = "test_normalize", type =str, help = "name of the run to be tested")
     parser.add_argument('--epoch', default ="", type=str,
                             help='which epoch to test')
-    parser.add_argument('--score', default='MIPC', type=str, help='score options: MSP|energy|knn|MIPC')
+    parser.add_argument('--score', default='knn', type=str, help='score options: MSP|energy|knn|MIPC')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
-    parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
+    parser.add_argument('--T', default = 100, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     args = parser.parse_args()
 
     args.gpus = list(map(lambda x: torch.device('cuda', x), args.gpus)) # will be used in set_model()
-    args.name += f"_{args.score}"
     if args.in_dataset == "CIFAR-10":
         args.n_cls = 10
     elif args.in_dataset == "CIFAR-100":
