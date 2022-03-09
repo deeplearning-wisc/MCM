@@ -327,6 +327,29 @@ def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, genera
                 _score.append(-count.squeeze())
 
         return concat(_score).copy()
+
+def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, softmax = True, generate = False, template_dir = 'img_templates'):
+    if generate: 
+        image_templates = get_mean(args, net, preprocess)
+    else: 
+        image_templates = torch.load(os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
+    image_templates = image_templates.half() # cast dtype to float16
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
+    text_dataset = TextDataset(text_inputs, text_df["cls"])
+    text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
+    tqdm_object = tqdm(text_loader, total=len(text_loader)) 
+    with torch.no_grad():  
+        for batch_idx, (texts, labels) in enumerate(tqdm_object):
+            text_features = net.encode_text(texts)
+            text_features /= text_features.norm(dim=-1, keepdim=True)   
+            output = text_features @ image_templates.T
+            if softmax:
+                smax = to_np(F.softmax(output/ args.T, dim=1))
+            _score.append(-np.max(smax, axis=1))
+        return concat(_score).copy()
        
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
@@ -389,7 +412,7 @@ def get_mean_prec(args, net, preprocess):
 
     return classwise_mean, precision
 
-def get_mean(args, net, preprocess):
+def get_mean(args, net, preprocess, mean_dir = 'img_templates' ):
     '''
     used for Maha score. calculate class-wise mean only
     '''
@@ -412,6 +435,7 @@ def get_mean(args, net, preprocess):
     for cls in range(args.n_cls):
         classwise_features[cls] = torch.cat(classwise_features[cls], 0)
         classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+    torch.save(classwise_mean, os.path.join(mean_dir,f'classwise_mean_{args.in_dataset}.pt'))
     return classwise_mean
             
 
@@ -427,6 +451,33 @@ def get_prec(args, net, train_loader):
     print(f'cond number: {torch.linalg.cond(precision)}')
 
     return precision
+
+def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision):
+    '''
+    Compute the proposed Mahalanobis confidence score on input dataset
+    '''
+    # net.eval()
+    Mahalanobis = []
+    with torch.no_grad():
+        for batch_idx, (images, labels) in enumerate(test_loader):
+            # if batch_idx >= num_batches and in_dist is False:
+            #     break       
+            images, labels = images.cuda(), labels.cuda()
+            features = net.encode_image(images)
+            if args.normalize: 
+                features /= features.norm(dim=-1, keepdim=True)
+            for i in range(args.n_cls):
+                class_mean = classwise_mean[i]
+                zero_f = features - class_mean
+                Mahalanobis_dist = -0.5*torch.mm(torch.mm(zero_f, precision), zero_f.t()).diag()
+                if i == 0:
+                    noise_gaussian_score = Mahalanobis_dist.view(-1,1)
+                else:
+                    noise_gaussian_score = torch.cat((noise_gaussian_score, Mahalanobis_dist.view(-1,1)), 1)      
+            noise_gaussian_score, _ = torch.max(noise_gaussian_score, dim=1)
+            Mahalanobis.extend(-noise_gaussian_score.cpu().numpy())
+        
+    return np.asarray(Mahalanobis, dtype=np.float32)
 
 def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list):
     '''

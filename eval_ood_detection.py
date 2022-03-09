@@ -5,8 +5,7 @@ import torch
 import clip
 # from torchvision.transforms import transforms
 from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
-from utils.detection_util import (get_MIPC_scores_clip, get_and_print_results, get_knn_scores_from_clip_img_encoder_id, get_knn_scores_from_clip_img_encoder_ood, 
-                            get_mean_prec, get_ood_scores, get_ood_scores_clip, get_retrival_scores_clip,  print_measures, set_ood_loader, set_ood_loader_ImageNet)
+from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
 from utils.train_eval_util import set_model, set_train_loader, set_val_loader
@@ -21,16 +20,17 @@ def process_args():
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     parser.add_argument('-b', '--batch-size', default=200, type=int,
                             help='mini-batch size')
+    parser.add_argument('--score', default='MIPCI', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival')
+
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "mode", type =str, help = "name of the run to be tested")
+    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
     parser.add_argument('--epoch', default ="", type=str,
                             help='which epoch to test')
-    parser.add_argument('--score', default='retrival', type=str, help='score options: MSP|energy|knn|MIPC|retrival')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
-    parser.add_argument('--T', default = 100, type =float, help = "temperature for energy score")    
+    parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
@@ -74,11 +74,13 @@ def main():
 
     net.eval()
     test_labels = get_test_labels(args)
-    if args.score in ['MIPC', 'retrival']:
+    if args.score in ['MIPCI', 'MIPCT', 'retrival']:
         captions_dir = 'gen_captions'
         text_df = prepare_dataframe(captions_dir, dataset_name = 'imagenet_val') # currently only supports ImageNet10 captions
-        if args.score == 'MIPC':
+        if args.score == 'MIPCT':
             in_score = get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True)
+        elif args.score == 'MIPCI':
+            in_score = get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess)
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
@@ -115,9 +117,12 @@ def main():
     auroc_list, aupr_list, fpr_list = [], [], []
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
-        if args.score == 'MIPC':
+        if args.score == 'MIPCT':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_MIPC_scores_clip(args, net, ood_text_df, test_labels)
+        elif args.score == 'MIPCI':
+            ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
+            out_score = get_retrival_scores_from_classwise_mean_clip(args, net, ood_text_df, preprocess)
         elif args.score == 'retrival':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
