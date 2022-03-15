@@ -20,4 +20,4 @@ venv.bak/
 
 datasets/
 results/
-data/
+data/CIFAR*
