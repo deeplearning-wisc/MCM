@@ -19,7 +19,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = "false"
 def get_params(description = 'Training clip'):
     parser = argparse.ArgumentParser(description=description)
     # training  
-    parser.add_argument("--batch_size", type=int, default=384)
+    parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-4)

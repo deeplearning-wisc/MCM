@@ -5,7 +5,7 @@ from PIL import Image
 import requests
 import os, sys
 import numpy as np
-from transformers import CLIPProcessor, CLIPModel
+from transformers import CLIPProcessor, CLIPModel, CLIPTokenizer
 from torchvision.transforms import (CenterCrop, 
                                     Compose, 
                                     Normalize, 
@@ -27,12 +27,46 @@ def play_with_image_processing(url =  "http://images.cocodataset.org/val2017/000
     tensor = transform(np_image) # shape -> torch.Size([3, 480, 640])
     return image
 
-def play_with_tokenizer():
-    from transformers import CLIPTokenizerFast
-    tokenizer = CLIPTokenizerFast.from_pretrained("openai/clip-vit-base-patch32")
-    text_inputs = tokenizer("Hello world")
-    # text_inputs.keys() -> dict_keys(['input_ids', 'attention_mask'])
+
+def play_with_tokenizer_and_model(lang = 'ml'):
+    from transformers import BertTokenizer, BertModel
+    if lang == 'ml':
+        tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-uncased')
+        # text_inputs = tokenizer("今天真好")
+        model = BertModel.from_pretrained("bert-base-multilingual-uncased")
+        print(model.embeddings)
+        #BertEmbeddings(
+        # (word_embeddings): Embedding(105879, 768, padding_idx=0)
+        # (position_embeddings): Embedding(512, 768)
+        # (token_type_embeddings): Embedding(2, 768)
+        # (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+        # (dropout): Dropout(p=0.1, inplace=False)
+        # )
+    elif lang == 'es':
+        tokenizer = BertTokenizer.from_pretrained('dccuchile/bert-base-spanish-wwm-cased')
+        model = BertModel.from_pretrained('dccuchile/bert-base-spanish-wwm-cased')
+        print(model.embeddings)
+        #BertEmbeddings(
+        #   (word_embeddings): Embedding(31002, 768, padding_idx=1)
+        #   (position_embeddings): Embedding(512, 768)
+        #   (token_type_embeddings): Embedding(2, 768)
+        #   (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+        #   (dropout): Dropout(p=0.1, inplace=False)
+        # )
+
+    elif lang == 'en':
+        tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+        text_inputs = tokenizer("Hello world")
+        # text_inputs.keys() -> dict_keys(['input_ids', 'attention_mask'])
+        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        print(model.text_model.embeddings)
+        # CLIPTextEmbeddings(
+        # (token_embedding): Embedding(49408, 512)
+        # (position_embedding): Embedding(77, 512)
+        # )
     print("")
+
+
 
 def play_with_feature_extrator():
     from transformers import CLIPFeatureExtractor
@@ -104,5 +138,8 @@ if __name__ == '__main__':
     #play_with_tokenizer()
     # play_with_feature_extrator()
     # play_with_huggingface_clip()
-    cifar_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar='CIFAR-10')
-    zero_shot_evaluation_huggingface(image_dataset_name = 'CIFAR-10', test_labels = cifar_labels)
+
+    #cifar_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar='CIFAR-10')
+    #zero_shot_evaluation_huggingface(image_dataset_name = 'CIFAR-10', test_labels = cifar_labels)
+
+    play_with_tokenizer_and_model(lang = 'en')
