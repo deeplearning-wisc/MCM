@@ -16,7 +16,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = "false"
 def get_params(description = 'Training clip'):
     parser = argparse.ArgumentParser(description=description)
     # training  
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=96)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
@@ -81,7 +81,7 @@ def train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler):
         optimizer.step()
         loss_meter.update(loss.item(), bz)
         tqdm_object.set_postfix(train_loss=loss_meter.avg, lr=get_lr(optimizer))
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
     lr_scheduler.step()
     return loss_meter
         
@@ -126,7 +126,8 @@ def valid_epoch(params, model, tokenizer):
             batch.pop('caption')
             for k, v in text_tokens.items():
                 batch[k] = torch.tensor(v).to(params.device)
-            loss = model(batch)
+            batch['return_loss'] = True
+            loss = model(**batch).loss
             loss_meter.update(loss.item(), bz)
             tqdm_object.set_postfix(valid_loss=loss_meter.avg)
     return loss_meter
