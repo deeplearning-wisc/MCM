@@ -47,10 +47,14 @@ def get_params(description = 'Training clip'):
     params.ckpt = "openai/clip-vit-base-patch32"
     if params.server == 'A100':
         params.image_dir = '/home/mingyifei/datasets/COCO' 
+        save_dir = f'checkpoints/clip/{params.dataset}'
     elif params.server in ['inst-01', 'inst-04']:
         params.image_dir = '/nobackup/COCO/COCO-14'
+        save_dir = f'/nobackup/checkpoints/clip/{params.dataset}'
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
-    params.model_path = f"checkpoints/clip/{params.dataset}/best_{params.lang}.pt" #path where the model to be saved
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    params.model_path =  os.path.join(save_dir, f"best_{params.lang}.pt") #path where the model to be saved
     params.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     return params
 
