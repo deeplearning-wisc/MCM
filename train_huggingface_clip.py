@@ -1,4 +1,5 @@
 
+from genericpath import exists
 import os
 from tqdm import tqdm
 import torch
@@ -6,6 +7,8 @@ import argparse
 from transformers import CLIPProcessor, CLIPModel
 from transformers import logging
 from transformers import BertTokenizer, AutoTokenizer
+from torch.utils.tensorboard import SummaryWriter
+
 from utils.common import AverageMeter
 from utils.coco_dataset import build_coco_loader
 
@@ -41,20 +44,24 @@ def get_params(description = 'Training clip'):
     parser.add_argument("--root_dir", type=str, default='data', help="data root dir")
     parser.add_argument("--lang", type=str, default='en', help="caption language")
     parser.add_argument("--dataset", type=str, default='COCO', help="image dataset")
+    #logging
+    parser.add_argument("--unique_id", type=str, default='en_32_test', help="data root dir")
+
 
     # parse parameters
     params = parser.parse_args()
     params.ckpt = "openai/clip-vit-base-patch32"
     if params.server == 'A100':
         params.image_dir = '/home/mingyifei/datasets/COCO' 
-        save_dir = f'checkpoints/clip/{params.dataset}'
+        params.save_dir = f'checkpoints/clip/{params.dataset}'
+        params.batch_size = 384
     elif params.server in ['inst-01', 'inst-04']:
         params.image_dir = '/nobackup/COCO/COCO-14'
-        save_dir = f'/nobackup/checkpoints/clip/{params.dataset}'
+        params.save_dir = f'/nobackup/checkpoints/clip/{params.dataset}'
+        params.batch_size = 96
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    params.model_path =  os.path.join(save_dir, f"best_{params.lang}.pt") #path where the model to be saved
+    os.makedirs(params.save_dir, exist_ok=True)
+    params.model_path =  os.path.join(params.save_dir, f"best_{params.lang}.pt") #path where the model to be saved
     params.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     return params
 
@@ -72,7 +79,7 @@ def log_write(logf, msg, console_print=True):
 #         p.data = p.data.float() 
 #         p.grad.data = p.grad.data.float() 
 
-def train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler):
+def train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler, global_step):
     loss_meter = AverageMeter()
     tqdm_object = tqdm(train_loader, total=len(train_loader))
     for batch in tqdm_object:
@@ -89,11 +96,16 @@ def train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler):
         optimizer.step()
         loss_meter.update(loss.item(), bz)
         tqdm_object.set_postfix(train_loss=loss_meter.avg, lr=get_lr(optimizer))
+        # logging
+        if global_step % 10 == 0:
+            writer.add_scalar("train/loss", scalar_value=loss_meter.avg, global_step=global_step)
+            writer.add_scalar("train/lr", scalar_value=lr_scheduler.get_lr()[0], global_step=global_step)
+        global_step += 1
         # torch.cuda.empty_cache()
     lr_scheduler.step()
-    return loss_meter
+    return loss_meter, global_step
         
-def train(params, model, tokenizer, logf):
+def train(params, model, tokenizer, logf, writer):
     print("Training model")
     train_loader= build_coco_loader(params, option = 'train')
     # optimizer = torch.optim.AdamW(
@@ -109,20 +121,21 @@ def train(params, model, tokenizer, logf):
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.8)
     # lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0002, max_lr=0.002,step_size_up=5,mode="triangular")
     best_loss = float('inf')
+    global_step = 0
     for epoch in range(params.epochs):
         print(f"Epoch: {epoch + 1}")
         model.train()
-        train_loss = train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler)
+        train_loss, global_step = train_epoch(model, tokenizer, train_loader, optimizer, lr_scheduler, global_step)
         model.eval()
         with torch.no_grad():
-            valid_loss = valid_epoch(params, model, tokenizer)
+            valid_loss = valid_epoch(params, model, tokenizer, global_step)
         if valid_loss.avg < best_loss:
             best_loss = valid_loss.avg
             torch.save(model.state_dict(), params.model_path)
             log_write(logf, "Saved Best Model!")
         log_write(logf, "epoch {} train_loss: {:.4f} val_loss: {:.4f}".format(epoch, train_loss.avg, valid_loss.avg))
 
-def valid_epoch(params, model, tokenizer):
+def valid_epoch(params, model, tokenizer, global_step):
     loss_meter = AverageMeter()
     val_loader= build_coco_loader(params, option = 'val')
     tqdm_object = tqdm(val_loader, total=len(val_loader))
@@ -138,6 +151,7 @@ def valid_epoch(params, model, tokenizer):
             loss = model(**batch).loss
             loss_meter.update(loss.item(), bz)
             tqdm_object.set_postfix(valid_loss=loss_meter.avg)
+    writer.add_scalar("test/loss", scalar_value=loss_meter.avg, global_step=global_step)
     return loss_meter
 
 if __name__ == "__main__":
@@ -146,12 +160,12 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(params.ckpt, do_lower_case=True)
     model = CLIPModel.from_pretrained(params.ckpt).to(params.device)
     log_dir = 'train_results/logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok = True)
     logf = open(os.path.join(log_dir, f'{params.dataset}_{params.lang}.out'), 'w')
+    writer = SummaryWriter(log_dir= os.path.join(log_dir, params.unique_id))
 
     if params.resume:
         model.load_state_dict(torch.load(params.model_path))
     if params.is_train:
-        train(params, model, tokenizer, logf)
+        train(params, model, tokenizer, logf, writer)
     
