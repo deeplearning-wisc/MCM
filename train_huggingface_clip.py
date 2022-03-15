@@ -16,7 +16,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = "false"
 def get_params(description = 'Training clip'):
     parser = argparse.ArgumentParser(description=description)
     # training  
-    parser.add_argument("--batch_size", type=int, default=96)
+    parser.add_argument("--batch_size", type=int, default=384)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
@@ -37,6 +37,7 @@ def get_params(description = 'Training clip'):
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--is_train", action='store_false')
     #data loading
+    parser.add_argument("--server", type=str, default='A100', help="run on which server")
     parser.add_argument("--root_dir", type=str, default='data', help="data root dir")
     parser.add_argument("--lang", type=str, default='en', help="caption language")
     parser.add_argument("--dataset", type=str, default='COCO', help="image dataset")
@@ -44,9 +45,12 @@ def get_params(description = 'Training clip'):
     # parse parameters
     params = parser.parse_args()
     params.ckpt = "openai/clip-vit-base-patch32"
-    params.image_dir = f'/nobackup/COCO/COCO-14' #for inst-01; inst-04
+    if params.server == 'A100':
+        params.image_dir = f'/home/mingyifei/datasets/COCO' 
+    elif params.server in ['inst-01', 'inst-04']:
+        params.image_dir = f'/home/mingyifei/datasets/COCO'
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
-    params.model_path = f"/nobackup/checkpoints/clip/{params.dataset}/best_{params.lang}.pt" #path where the model to be saved
+    params.model_path = f"checkpoints/clip/{params.dataset}/best_{params.lang}.pt" #path where the model to be saved
     params.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     return params
 
