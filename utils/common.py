@@ -97,6 +97,32 @@ def evaluate_classification(dataloader, test_labels, model, preprocess, device):
 
     print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
 
+def evaluate_classification_huggingface(dataloader, test_labels, model, device):
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    text_inputs = [f"a photo of a {c}" for c in test_labels]
+    from transformers import CLIPTokenizer
+    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    text_inputs = tokenizer(text_inputs)
+    input_dict = {}
+    input_dict['input_ids'] = torch.tensor(text_inputs['input_ids']).to(device)
+    input_dict['attention_mask'] = torch.tensor(text_inputs['attention_mask']).to(device)
+    top5, top1 = AverageMeter(), AverageMeter()
+    with torch.no_grad():
+      for (images, labels) in tqdm_object:
+          labels = labels.long().to(device)
+          input_dict['pixel_values'] = images.to(device)
+          outputs = model(**input_dict)
+          text_features = outputs.text_embeds
+          image_features = outputs.image_embeds
+          logits = image_features @ text_features.T
+          # _, pred = logits.topk(1, 1, True, True)
+          # pred = pred.t()
+          precs = accuracy(logits, labels, topk=(1, 5))
+          top1.update(precs[0].item(), images.size(0))
+          top5.update(precs[1].item(), images.size(0))
+
+    print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
+
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)

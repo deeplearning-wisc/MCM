@@ -9,7 +9,7 @@ import argparse
 from transformers import ViTFeatureExtractor, CLIPProcessor
 
 
-def prepare_dataframe(lang, captions_dir, option = 'train'):
+def build_caption_dataframe(lang, captions_dir, option = 'train'):
     if option == 'train': 
         image_path =os.path.join(params.image_dir, "train2014")
         captions_path = os.path.join(params.captions_dir, "processed_captions_train2014.csv")
@@ -26,7 +26,7 @@ def prepare_dataframe(lang, captions_dir, option = 'train'):
     processed_df = df[df["image_id"].isin(images)].reset_index(drop=True)
     return processed_df, image_path
 
-def build_loaders(params, df, image_path, option):
+def build_image_loader(params, df, image_path, option):
     image_ids = df["image_id"].values
     image_prefix = f'COCO_{option}2014_'
     image_filenames = [f"{image_path}/{image_prefix}{str(image_ids[i]).zfill(12)}.jpg" for i in range(len(image_ids))] 
@@ -35,10 +35,10 @@ def build_loaders(params, df, image_path, option):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=params.batch_size, num_workers=params.num_workers, shuffle=(option == 'train'))
     return dataloader
 
-def load_data(params, option = 'train'):
-    df, image_path = prepare_dataframe(params.lang, params.captions_dir, option)
-    data_loader = build_loaders(params, df, image_path, option)
-    return data_loader
+def build_coco_loader(params, option = 'train'):
+    df, image_path = build_caption_dataframe(params.lang, params.captions_dir, option)
+    coco_loader = build_image_loader(params, df, image_path, option)
+    return coco_loader
 
 
 class CLIPDataset_ViT(torch.utils.data.Dataset):
@@ -57,7 +57,7 @@ class CLIPDataset_ViT(torch.utils.data.Dataset):
         image = cv2.imread(self.image_filenames[idx]) 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # CV2 reads in img with BGR for historical reasons; need to conver to RGB first
         img = np.moveaxis(image, source=-1, destination=0)
-        inputs = self.feature_extractor(images = img, return_tensors="pt") # transforms already
+        inputs = self.feature_extractor(images = img, return_tensors="pt") # transform to tensors already
 
         item = {}
         item['image'] = inputs['pixel_values'][0]  # inputs['pixel_values'].shape: torch.Size([1, 3, 224, 224])
@@ -81,5 +81,5 @@ if __name__ == '__main__':
 
     params.image_dir = f'/nobackup/COCO/COCO-14'
     params.captions_dir = f"{params.caption_dir}/{params.dataset}/captions/{params.lang}"
-    train_loader = load_data(params, option = 'train')
-    val_loader = load_data(params, option = 'val')
+    train_loader = build_coco_loader(params, option = 'train')
+    val_loader = build_coco_loader(params, option = 'val')
