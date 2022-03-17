@@ -1,0 +1,18 @@
+Saved Best Model!
+epoch 0 train_loss: 0.3175 val_loss: 1.1262
+epoch 1 train_loss: 0.1977 val_loss: 1.1342
+epoch 2 train_loss: 0.1633 val_loss: 1.1591
+epoch 3 train_loss: 0.1412 val_loss: 1.1660
+epoch 4 train_loss: 0.1274 val_loss: 1.1810
+epoch 5 train_loss: 0.1155 val_loss: 1.1952
+epoch 6 train_loss: 0.1068 val_loss: 1.2102
+epoch 7 train_loss: 0.1010 val_loss: 1.2345
+epoch 8 train_loss: 0.0975 val_loss: 1.2382
+epoch 9 train_loss: 0.0929 val_loss: 1.2527
+epoch 10 train_loss: 0.0895 val_loss: 1.2558
+epoch 11 train_loss: 0.0869 val_loss: 1.2710
+epoch 12 train_loss: 0.0845 val_loss: 1.2724
+epoch 13 train_loss: 0.0828 val_loss: 1.2806
+epoch 14 train_loss: 0.0816 val_loss: 1.2851
+epoch 15 train_loss: 0.0800 val_loss: 1.2876
+epoch 16 train_loss: 0.0790 val_loss: 1.2906

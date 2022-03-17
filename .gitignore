@@ -20,4 +20,5 @@ venv.bak/
 
 datasets/
 results/
+train_results/
 data/CIFAR*

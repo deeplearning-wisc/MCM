@@ -5,7 +5,7 @@ from PIL import Image
 import requests
 import os, sys
 import numpy as np
-from transformers import CLIPProcessor, CLIPModel, CLIPTokenizer
+from transformers import CLIPProcessor, CLIPModel, CLIPTokenizer, CLIPTextModel
 from torchvision.transforms import (CenterCrop, 
                                     Compose, 
                                     Normalize, 
@@ -46,6 +46,8 @@ def play_with_tokenizer_and_model(lang = 'ml'):
         tokenizer = BertTokenizer.from_pretrained('dccuchile/bert-base-spanish-wwm-cased')
         model = BertModel.from_pretrained('dccuchile/bert-base-spanish-wwm-cased')
         print(model.embeddings)
+
+        text_model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch16")
         #BertEmbeddings(
         #   (word_embeddings): Embedding(31002, 768, padding_idx=1)
         #   (position_embeddings): Embedding(512, 768)
@@ -53,6 +55,7 @@ def play_with_tokenizer_and_model(lang = 'ml'):
         #   (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
         #   (dropout): Dropout(p=0.1, inplace=False)
         # )
+        print('done')
 
     elif lang == 'en':
         tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")

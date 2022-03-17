@@ -1,4 +1,6 @@
-from src.tclip.dataset import prepare_dataframe
+# from src.tclip.dataset import prepare_dataframe
+import pandas as pd
+
 
 def translate_text(target = 'zh', text = "hi there"):
     """Translates text into the target language.
@@ -31,11 +33,11 @@ texts_src = [
     'A cat is chasing after a dog'
 ]
 
-train_df, valid_df = prepare_dataframe(lang = 'en', captions_path = 'dataset/coco/captions/en/processed_captions_train2014.csv', train_only = False)
+valid_df = pd.read_csv('data/COCO/captions/en/processed_captions_val2014.csv')
 
 # translate_text(target = 'de', text = texts_src)
 
-df_to_translate = train_df
+df_to_translate = valid_df[['image_id', 'caption']]
 from pygtrans import Translate
 
 # valid_df = valid_df[:10]
@@ -46,15 +48,15 @@ for i in range(0, len(df_to_translate), bz):
     texts_src = df_to_translate.caption[i:i+bz]
     print(len(texts_src))
     # translated.extend(list(test_src))
-    texts = client.translate(list(texts_src), target = 'fr') #zh, de
+    texts = client.translate(list(texts_src), target = 'es') #zh, de
     for text in texts:
         translated.append(text.translatedText) 
 
 print('done')
-df_to_translate['de_caption'] = translated 
+df_to_translate['es_caption'] = translated 
 df_to_translate = df_to_translate.drop(columns = ['caption'])
 from pathlib import Path  
-filepath = Path('test/processed_captions_train2014_fr.csv')  
+filepath = Path('processed_captions_val2014_es.csv')  
 filepath.parent.mkdir(parents=True, exist_ok=True) 
 #or: 
 # import os  

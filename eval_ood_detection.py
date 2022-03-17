@@ -14,13 +14,13 @@ from utils.train_eval_util import set_model, set_train_loader, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
-    parser.add_argument('-b', '--batch-size', default=200, type=int,
+    parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size')
-    parser.add_argument('--score', default='MIPCI', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival')
+    parser.add_argument('--score', default='MSP', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival')
 
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
@@ -58,7 +58,6 @@ def get_test_labels(args):
 
 
 def main():
-
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
@@ -85,7 +84,7 @@ def main():
             in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
         test_loader = set_val_loader(args, preprocess)
-        train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
+        # train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
     if args.score in ['MSP', 'energy', 'entropy']:
         if args.model == 'CLIP':
@@ -110,8 +109,8 @@ def main():
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
     elif args.in_dataset in ['ImageNet','ImageNet10']: 
-        # out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
-        out_datasets =  ['places365', 'dtd', 'iNaturalist']
+        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+        # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
 
     auroc_list, aupr_list, fpr_list = [], [], []
