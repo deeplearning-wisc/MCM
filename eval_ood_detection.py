@@ -18,7 +18,7 @@ def process_args():
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
-    parser.add_argument('-b', '--batch-size', default=200, type=int,
+    parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size')
     parser.add_argument('--score', default='MIPT', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT')
 
@@ -62,7 +62,6 @@ def get_test_labels(args):
 
 
 def main():
-
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
@@ -90,6 +89,8 @@ def main():
     else:
         test_loader = set_val_loader(args, preprocess, root='/nobackup-slow/dataset')
         train_loader = set_train_loader(args, preprocess, root='/nobackup-slow/dataset') # used for KNN and Maha score
+        # test_loader = set_val_loader(args, preprocess)
+        # train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
     if args.score in ['MSP', 'energy', 'entropy', 'MIPT']:
         if args.model == 'CLIP':
@@ -114,8 +115,8 @@ def main():
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
-        # out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
-        out_datasets =  ['places365', 'dtd', 'iNaturalist']
+        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+        # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
 
     auroc_list, aupr_list, fpr_list = [], [], []
