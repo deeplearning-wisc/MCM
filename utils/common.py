@@ -123,6 +123,40 @@ def evaluate_classification_huggingface(dataloader, test_labels, model, device):
 
     print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
 
+def evaluate_classification_mclip(dataloader, test_labels, visual_model, text_model, device, lang):
+    tqdm_object = tqdm(dataloader, total=len(dataloader))
+    if lang == 'es': # spanish 
+        text_inputs = ['una foto de un avión', 'una foto de un automóvil', 
+        'una foto de un pájaro', 'una foto de un gato', 'una foto de un ciervo', 
+        'una foto de un perro', 'una foto de una rana', ' una foto de caballo', 
+        'una foto de barco', 'una foto de camión']
+    elif lang == 'de': #german
+        text_inputs =['ein Foto eines Flugzeugs', 'ein Foto eines Autos',
+         'ein Foto eines Vogels', 'ein Foto einer Katze', 'ein Foto eines Hirsches',
+          'ein Foto eines Hundes', 'ein Foto eines Frosches', ' ein Foto von einem Pferd',
+           'ein Foto von einem Schiff', 'ein Foto von einem Lastwagen']
+    elif lang == 'fr': #french
+        text_inputs = ["une photo d'avion", "une photo d'automobile", "une photo d'oiseau",
+         "une photo de chat", "une photo de cerf", "une photo de chien", 
+         "une photo de grenouille", " une photo de cheval", "une photo de bateau", "une photo de camion"]
+
+    top5, top1 = AverageMeter(), AverageMeter()
+    with torch.no_grad():
+      for (images, labels) in tqdm_object:
+          labels = labels.long().to(device)
+          images = images.to(device)
+          image_features = visual_model.encode_image(images).float()
+          text_features = text_model(text_inputs)
+          image_features /= image_features.norm(dim=-1, keepdim=True)
+          text_features /= text_features.norm(dim=-1, keepdim=True)   
+          # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+          logits = image_features @ text_features.T
+          # _, pred = logits.topk(1, 1, True, True)
+          # pred = pred.t()
+          precs = accuracy(logits, labels, topk=(1, 5))
+          top1.update(precs[0].item(), images.size(0))
+          top5.update(precs[1].item(), images.size(0))
+    print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)

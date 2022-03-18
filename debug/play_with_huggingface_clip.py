@@ -145,4 +145,4 @@ if __name__ == '__main__':
     #cifar_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar='CIFAR-10')
     #zero_shot_evaluation_huggingface(image_dataset_name = 'CIFAR-10', test_labels = cifar_labels)
 
-    play_with_tokenizer_and_model(lang = 'en')
+    play_with_tokenizer_and_model(lang = 'es')

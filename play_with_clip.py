@@ -21,7 +21,7 @@ from utils import (AverageMeter, obtain_cifar_classes,  evaluate_classification,
 
 def zero_shot_evaluation_CLIP(image_dataset_name, test_labels, ckpt = 'ViT-B/16'):
     # Load the model
-    device = "cuda:1" if torch.cuda.is_available() else "cpu"
+    device = "cuda:3" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load(ckpt, device)  
     #zero shot evaluation
     dataloader = get_image_dataloader(image_dataset_name, preprocess, train = False)
@@ -105,7 +105,7 @@ def play_with_skimage(ckpt = "ViT-B/16"):
 
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
-    parser.add_argument('--img_dataset', type=str, default='CIFAR-100',
+    parser.add_argument('--img_dataset', type=str, default='CIFAR-10',
                         choices=['CIFAR-10', 'CIFAR-100'], help='img dataset')
     parser.add_argument('--ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')

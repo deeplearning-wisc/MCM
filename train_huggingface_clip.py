@@ -42,10 +42,10 @@ def get_params(description = 'Training clip'):
     #data loading
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     parser.add_argument("--root_dir", type=str, default='data', help="data root dir")
-    parser.add_argument("--lang", type=str, default='es', help="caption language")
+    parser.add_argument("--lang", type=str, default='en', help="caption language")
     parser.add_argument("--dataset", type=str, default='COCO', help="image dataset")
     #logging
-    parser.add_argument("--unique_id", type=str, default='es_32_adamw', help="data root dir")
+    parser.add_argument("--unique_id", type=str, default='en_32_adamw', help="data root dir")
 
 
     # parse parameters
@@ -162,10 +162,7 @@ def valid_epoch(params, model, tokenizer, global_step):
 if __name__ == "__main__":
     params = get_params()
     print("Caption Language: " + params.lang)
-    if params.lang in ['en', 'es']:
-        tokenizer = AutoTokenizer.from_pretrained(params.ckpt, do_lower_case=True)
-    elif params.lang == 'ml':
-        tokenizer = BertTokenizer.from_pretrained('dccuchile/bert-base-spanish-wwm-cased')
+    tokenizer = AutoTokenizer.from_pretrained(params.ckpt, do_lower_case=True)
     model = CLIPModel.from_pretrained(params.ckpt).to(params.device)
     log_dir = 'train_results/logs'
     os.makedirs(log_dir, exist_ok = True)

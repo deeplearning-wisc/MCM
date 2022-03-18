@@ -17,7 +17,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+clip-spanish/
 datasets/
 results/
 train_results/
