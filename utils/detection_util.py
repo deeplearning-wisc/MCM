@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import faiss
 from scipy import stats
 from utils.train_eval_util import set_train_loader
+from utils.imagenet_templates import openai_imagenet_template
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
@@ -45,7 +46,7 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
     if len(testsetout) > 10000: 
         testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
-                                            shuffle=True, num_workers=8)
+                                            shuffle=True, num_workers=0)
     return testloaderOut
 
 def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dataset_myf_ImageNet_OOD'):
@@ -59,13 +60,15 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     elif out_dataset == 'places365':
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
-        root = '/nobackup/dataset_myf'
-        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
+        # root = '/nobackup/dataset_myf'
+        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
+        #                             transform=preprocess) 
+        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
                                     transform=preprocess) 
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
-                                            shuffle=False, num_workers=8)
+                                            shuffle=False, num_workers=0)
     return testloaderOut
 
 def print_measures(log, auroc, aupr, fpr, method_name='Ours', recall_level=0.95):
@@ -203,7 +206,7 @@ def get_ood_scores(args, net, loader, in_dist=False):
     else:
         return concat(_score)[:len(loader.dataset)].copy()
 
-def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
+def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True, multi_template=False):
     '''
     used for scores based on img-caption product inner products: MSP (MIP), entropy, energy score. 
     '''
@@ -214,7 +217,10 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     _wrong_score = []
 
     tqdm_object = tqdm(loader, total=len(loader))
-    text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+    if multi_template:
+        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:10]]).cuda()
+    else:
+        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
 
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(tqdm_object):
@@ -226,8 +232,9 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             text_features = net.encode_text(text_inputs)
             image_features /= image_features.norm(dim=-1, keepdim=True)
             text_features /= text_features.norm(dim=-1, keepdim=True)   
-            # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+            # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
             output = image_features @ text_features.T
+
             if softmax:
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             else:

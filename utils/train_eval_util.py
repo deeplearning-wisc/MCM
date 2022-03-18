@@ -38,13 +38,21 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
         train_loader = torch.utils.data.DataLoader(
                     datasets.CIFAR100(os.path.join(root, 'cifar100'), train=True, download=True, transform=preprocess),
                     batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif args.in_dataset == "ImageNet":
+        # root = '/nobackup/ImageNet' #inst-01
+        # val_loader = torch.utils.data.DataLoader(
+        #         datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
+        #         batch_size=args.batch_size, shuffle=False, **kwargs)
+        train_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(root, 'ILSVRC-2012', 'train'), transform=preprocess),
+                batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet10":
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet100":
         train_loader = torch.utils.data.DataLoader(
-                ImageNet100(os.path.join(root, 'ImageNet100'), transform=preprocess, download=True, train=True),
+                datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'train'), transform=preprocess),
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     return train_loader
@@ -71,9 +79,12 @@ def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
             datasets.CIFAR100(os.path.join(root, 'cifar100'), train=False, download=True,transform=preprocess),
             batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet":
-        root = '/nobackup/ImageNet' #inst-01
+        # root = '/nobackup/ImageNet' #inst-01
+        # val_loader = torch.utils.data.DataLoader(
+        #         datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
+        #         batch_size=args.batch_size, shuffle=False, **kwargs)
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
+                datasets.ImageFolder(os.path.join(root, 'ILSVRC-2012', 'val'), transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet10":
         val_loader = torch.utils.data.DataLoader(
@@ -81,7 +92,7 @@ def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet100":
         val_loader = torch.utils.data.DataLoader(
-                ImageNet100(os.path.join(root, 'ImageNet100'), transform=preprocess, download=True, train=False),
+                datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'val'), transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     return val_loader
 

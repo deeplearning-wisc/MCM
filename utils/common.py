@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from torchvision.datasets import CIFAR100
 from torchvision.datasets import CIFAR10
+import json
 
 def setup_seed(args):
     torch.manual_seed(args.seed)
@@ -45,6 +46,20 @@ def obtain_ImageNet10_classes(loc = None):
     class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
     return class_dict.keys()
 
+def obtain_ImageNet100_classes(loc):
+    # sort by values
+    class_set = set()
+    with open('data/ImageNet100/val_100.txt') as file:
+        for line in file.readlines():
+            class_set.add(line.split(' ')[1].strip())
+
+    class_name_set = []
+    with open('data/imagenet_class_index.json') as file: 
+        class_index = json.load(file)
+        class_name_set = [class_index[c][1] for c in class_set]
+
+    return class_name_set
+
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
     if image_dataset_name.startswith('CIFAR'):
@@ -52,7 +67,7 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
           image_dataset = CIFAR100(data_dir, transform=preprocess, download=True, train=train)
       elif image_dataset_name == 'CIFAR-10':
           image_dataset = CIFAR10(data_dir, transform=preprocess, download=True, train=train)
-    dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=4)
+    dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=0)
     return dataloader
 
 def get_features(model, dataloader, device, normalize = False, to_np = True):

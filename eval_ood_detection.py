@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import clip
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
+from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -14,13 +14,13 @@ from utils.train_eval_util import set_model, set_train_loader, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
-                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10'], help='in-distribution dataset')
+    parser.add_argument('--in_dataset', default='ImageNet100', type=str, 
+                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     parser.add_argument('-b', '--batch-size', default=200, type=int,
                             help='mini-batch size')
-    parser.add_argument('--score', default='MIPCI', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival')
+    parser.add_argument('--score', default='MIPT', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT')
 
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
@@ -45,6 +45,8 @@ def process_args():
         args.n_cls = 1000
     elif args.in_dataset == "ImageNet10":
         args.n_cls = 10
+    elif args.in_dataset == "ImageNet100":
+        args.n_cls = 100
     return args
 
 def get_test_labels(args):
@@ -54,6 +56,8 @@ def get_test_labels(args):
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clean.npy'), cleaned = True)
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
+    elif args.in_dataset ==  "ImageNet100":
+        test_labels = obtain_ImageNet100_classes(loc = os.path.join('/nobackup-slow/dataset/ImageNet100'))
     return test_labels
 
 
@@ -84,12 +88,12 @@ def main():
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
-        test_loader = set_val_loader(args, preprocess)
-        train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
+        test_loader = set_val_loader(args, preprocess, root='/nobackup-slow/dataset')
+        train_loader = set_train_loader(args, preprocess, root='/nobackup-slow/dataset') # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
-    if args.score in ['MSP', 'energy', 'entropy']:
+    if args.score in ['MSP', 'energy', 'entropy', 'MIPT']:
         if args.model == 'CLIP':
-            in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True) 
+            in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         else:
             in_score, right_score, wrong_score= get_ood_scores(args, net, test_loader, in_dist=True)       
         num_right = len(right_score)
@@ -109,7 +113,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
-    elif args.in_dataset in ['ImageNet','ImageNet10']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
         # out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
@@ -127,15 +131,15 @@ def main():
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else:
-            if args.in_dataset in ['ImageNet', 'ImageNet10']:
-                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess)
+            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
+                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root='/nobackup-slow/dataset/ImageNet_OOD_dataset')
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
             if args.score == 'knn':
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad)
             else:
                 if args.model == 'CLIP':
-                    out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
+                    out_score = get_ood_scores_clip(args, net, ood_loader, test_labels, multi_template=args.score == 'MIPT') 
                 else:
                     out_score = get_ood_scores(args, net, ood_loader)
         from scipy import stats
