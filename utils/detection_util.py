@@ -220,7 +220,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     tqdm_object = tqdm(loader, total=len(loader))
     if multi_template:
         num_temp = 80
-        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:num_temp]])
+        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:num_temp]]).cuda()
     else:
         text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
 
