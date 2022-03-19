@@ -20,20 +20,21 @@ def process_args():
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size')
-    parser.add_argument('--score', default='MIPT', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT')
-
+    parser.add_argument('--score', default='MSP', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
-                        choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
-    parser.add_argument('--epoch', default ="", type=str,
-                            help='which epoch to test')
+                        choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
+    # parser.add_argument('--epoch', default ="", type=str,
+    #                         help='which epoch to test')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
-    parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
+    # parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
+    parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")
+    parser.add_argument('--server', default = "inst-01", type =str, 
+                choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     args = parser.parse_args()
 
     args.gpus = list(map(lambda x: torch.device('cuda', x), args.gpus)) # will be used in set_model()
@@ -47,17 +48,25 @@ def process_args():
         args.n_cls = 10
     elif args.in_dataset == "ImageNet100":
         args.n_cls = 100
+
+    if args.server in ['inst-01', 'inst-04']:
+        args.root_dir = '/nobackup/dataset_myf'
+    elif args.server in ['galaxy-01', 'galaxy-02']:
+        args.root_dir = '/nobackup-slow/dataset'
+    elif args.server in ['A100']:
+        args.root_dir = ''
+
     return args
 
 def get_test_labels(args):
     if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
-        test_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar = args.in_dataset)
+        test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
     elif args.in_dataset ==  "ImageNet":
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clean.npy'), cleaned = True)
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
     elif args.in_dataset ==  "ImageNet100":
-        test_labels = obtain_ImageNet100_classes(loc = os.path.join('/nobackup-slow/dataset/ImageNet100'))
+        test_labels = obtain_ImageNet100_classes(loc = os.path.join(os.path.join(args.root_dir,'ImageNet100')))
     return test_labels
 
 
@@ -73,6 +82,7 @@ def main():
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #available option
         torch.cuda.set_device(args.gpus[0])
+        args.device = 'cuda'
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
 
     net.eval()
@@ -87,11 +97,13 @@ def main():
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
-        test_loader = set_val_loader(args, preprocess, root='/nobackup-slow/dataset')
-        train_loader = set_train_loader(args, preprocess, root='/nobackup-slow/dataset') # used for KNN and Maha score
-        # test_loader = set_val_loader(args, preprocess)
-        # train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
+        test_loader = set_val_loader(args, preprocess, root=args.root_dir)
+        train_loader = set_train_loader(args, preprocess, root=args.root_dir) # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
+    if args.score == 'analyze':
+        analysis_feature_manitude(args, net, preprocess, test_loader) 
+        return 
+
     if args.score in ['MSP', 'energy', 'entropy', 'MIPT']:
         if args.model == 'CLIP':
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
@@ -105,7 +117,7 @@ def main():
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
-        mean, prec = get_mean_prec(args, net, preprocess)
+        mean, prec = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
 
     if args.in_dataset == 'CIFAR-10':
         log.debug('\nUsing CIFAR-10 as typical data') 
@@ -133,7 +145,7 @@ def main():
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else:
             if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
-                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root='/nobackup-slow/dataset/ImageNet_OOD_dataset')
+                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
             if args.score == 'knn':

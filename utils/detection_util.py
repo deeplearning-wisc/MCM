@@ -6,6 +6,7 @@ import clip
 import torchvision
 import sklearn.metrics as sk
 from utils.common import get_features
+from utils.plot_util import plot_distribution
 import utils.svhn_loader as svhn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
@@ -60,11 +61,11 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     elif out_dataset == 'places365':
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
-        # root = '/nobackup/dataset_myf'
-        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
-        #                             transform=preprocess) 
-        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
+        root = '/nobackup/dataset_myf'
+        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
                                     transform=preprocess) 
+        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
+        #                             transform=preprocess) 
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
@@ -357,14 +358,27 @@ def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess,
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1))
         return concat(_score).copy()
-       
+
+def analysis_feature_manitude(args, net, preprocess, id_loader):
+    fid, _ = get_features(net, id_loader, args.device, False)
+    fid_norm = np.linalg.norm(fid, axis = 1)
+    if args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
+        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+    for out_dataset in out_datasets:
+        print(f"Evaluting OOD dataset {out_dataset}")
+        if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
+            ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, 
+                        root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
+            food, _ = get_features(net, ood_loader, args.device, False)
+            food_norm = np.linalg.norm(food, axis = 1)
+        plot_distribution(args, fid_norm, food_norm, out_dataset)
+
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
     used for KNN score. ID dataset only 
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    ftrain, _ = get_features(net, train_loader, device, args.normalize)
-    ftest,_ = get_features(net, test_loader, device, args.normalize)
+    ftrain, _ = get_features(net, train_loader, args.device, args.normalize)
+    ftest,_ = get_features(net, test_loader, args.device, args.normalize)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -378,8 +392,7 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     '''
     used for KNN score. OOD dataset only
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    food, _ = get_features(net, ood_loader, device, args.normalize)
+    food, _ = get_features(net, ood_loader, args.device, args.normalize)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]
