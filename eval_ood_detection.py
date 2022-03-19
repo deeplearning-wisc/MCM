@@ -152,7 +152,7 @@ def main():
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad)
             else:
                 if args.model == 'CLIP':
-                    out_score = get_ood_scores_clip(args, net, ood_loader, test_labels, multi_template=args.score == 'MIPT') 
+                    out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 else:
                     out_score = get_ood_scores(args, net, ood_loader)
         from scipy import stats
