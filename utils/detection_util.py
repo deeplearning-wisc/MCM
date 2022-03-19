@@ -206,7 +206,7 @@ def get_ood_scores(args, net, loader, in_dist=False):
     else:
         return concat(_score)[:len(loader.dataset)].copy()
 
-def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True, multi_template=False):
+def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     '''
     used for scores based on img-caption product inner products: MSP (MIP), entropy, energy score. 
     '''
@@ -215,10 +215,12 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     _score = []
     _right_score = []
     _wrong_score = []
+    multi_template=args.score == 'MIPT'
 
     tqdm_object = tqdm(loader, total=len(loader))
     if multi_template:
-        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:10]]).cuda()
+        num_temp = 80
+        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:num_temp]])
     else:
         text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
 
@@ -235,10 +237,15 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
             output = image_features @ text_features.T
 
+            # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
+            # print(output.shape)
             if softmax:
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             else:
                 smax = to_np(output/ args.T)
+
+            # if multi_template:
+            #     smax = smax * num_temp
 
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
