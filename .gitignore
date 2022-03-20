@@ -20,5 +20,6 @@ venv.bak/
 clip-spanish/
 datasets/
 results/
+linear_probe_logs/
 train_results/
 data/CIFAR*
