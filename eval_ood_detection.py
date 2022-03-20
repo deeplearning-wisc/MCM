@@ -18,9 +18,9 @@ def process_args():
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
-    parser.add_argument('-b', '--batch-size', default=250, type=int,
+    parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
-    parser.add_argument('--score', default='MSP', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='knn', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')

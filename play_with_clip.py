@@ -170,6 +170,6 @@ if __name__ == '__main__':
     # corpus = read_file('noun_en_test.txt')
     # test_labels = cifar_cls + corpus
     test_labels = cifar_cls
-    zero_shot_evaluation_CLIP(args.img_dataset, test_labels, args.ckpt)
-    # linear_probe_evaluation_CLIP_gpu(args)
+    # zero_shot_evaluation_CLIP(args.img_dataset, test_labels, args.ckpt)
+    linear_probe_evaluation_CLIP_gpu(args)
     # play_with_skimage()
