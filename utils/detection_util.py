@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import faiss
 from scipy import stats
 from utils.train_eval_util import set_train_loader
-from utils.imagenet_templates import openai_imagenet_template
+from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
@@ -218,24 +218,29 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     multi_template= args.score == 'MIPT'
 
     tqdm_object = tqdm(loader, total=len(loader))
-    if multi_template:
-        num_temp = 80
-        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:num_temp]]).cuda()
-    else:
-        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
-
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(tqdm_object):
             if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
                 break
+            bz = images.size(0)
             labels = labels.long().cuda()
             images = images.cuda()
             image_features = net.encode_image(images)
-            text_features = net.encode_text(text_inputs)
             image_features /= image_features.norm(dim=-1, keepdim=True)
-            text_features /= text_features.norm(dim=-1, keepdim=True)   
+            if multi_template:
+                output = torch.zeros(bz,len(test_labels), device = args.device)
+                template_weights = [0.4,0.15,0.15,0.15,0.15]
+                for i, temp in enumerate(openai_imagenet_template_subset):
+                    text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
+                    text_features = net.encode_text(text_inputs)
+                    text_features /= text_features.norm(dim=-1, keepdim=True) 
+                    output += image_features @ text_features.T * template_weights[i]
+            else:
+                text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+                text_features = net.encode_text(text_inputs)
+                text_features /= text_features.norm(dim=-1, keepdim=True)   
             # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
-            output = image_features @ text_features.T
+                output = image_features @ text_features.T
 
             # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
             # print(output.shape)

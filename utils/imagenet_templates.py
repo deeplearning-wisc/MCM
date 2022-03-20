@@ -80,3 +80,12 @@ openai_imagenet_template = [
     lambda c: f'a photo of a small {c}.',
     lambda c: f'a tattoo of the {c}.',
 ]
+
+
+openai_imagenet_template_subset = [
+    lambda c: f'a photo of a {c}.',
+    lambda c: f'a blurry photo of a {c}.',
+    lambda c: f'a photo of many {c}.',
+    lambda c: f'a photo of the large {c}.',
+    lambda c: f'a photo of the small {c}.',
+]

@@ -21,7 +21,7 @@ def process_args():
     parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
     #encoder loading
-    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
@@ -31,7 +31,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     #detection setting 
-    parser.add_argument('--score', default='MSP', type=str, help='score options: MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='MIPT', type=str, help='score options: MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
