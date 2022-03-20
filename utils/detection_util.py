@@ -172,7 +172,6 @@ def get_ood_scores(args, net, loader, in_dist=False):
         for batch_idx, (data, target) in enumerate(loader):
             if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
                 break
-
             data = data.cuda()
             embed= net.encoder(data)
             # output,embed = net(data)
@@ -209,14 +208,14 @@ def get_ood_scores(args, net, loader, in_dist=False):
 
 def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     '''
-    used for scores based on img-caption product inner products: MSP (MIP), entropy, energy score. 
+    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
     '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
     _right_score = []
     _wrong_score = []
-    multi_template=args.score == 'MIPT'
+    multi_template= args.score == 'MIPT'
 
     tqdm_object = tqdm(loader, total=len(loader))
     if multi_template:
@@ -254,7 +253,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             elif args.score == 'entropy':  
                 from scipy.stats import entropy
                 _score.append(entropy(smax)) 
-            else: # original MSP and Mahalanobis (but Mahalanobis won't need this returned)
+            elif args.score in ['MIP', 'MIPT']:
                 _score.append(-np.max(smax, axis=1)) 
 
             if in_dist:
@@ -270,6 +269,49 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
         return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
     else:
         return concat(_score)[:len(loader.dataset)].copy()   
+
+def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
+    '''
+    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
+    '''
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    _right_score = []
+    _wrong_score = []
+
+    tqdm_object = tqdm(loader, total=len(loader))
+    with torch.no_grad():
+        for batch_idx, (images, labels) in enumerate(tqdm_object): #enumerate-> tqdm is the correct order; not tqdm -> enumerate
+            if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
+                break
+            labels = labels.long().cuda()
+            images = images.cuda()
+            image_features = net.encode_image(images).float()
+            if args.normalize: 
+                image_features /= image_features.norm(dim=-1, keepdim=True)  
+            output = classifier(image_features)
+            # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
+            smax = to_np(F.softmax(output/ args.T, dim=1))
+            if args.score == 'energy_logits':
+                #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
+                _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
+            elif args.score == 'MSP':
+                _score.append(-np.max(smax, axis=1)) 
+
+            if in_dist:
+                preds = np.argmax(smax, axis=1)
+                targets = labels.cpu().numpy().squeeze()
+                right_indices = preds == targets
+                wrong_indices = np.invert(right_indices)
+
+                _right_score.append(-np.max(smax[right_indices], axis=1))
+                _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+
+    if in_dist:
+        return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
+    else:
+        return concat(_score)[:len(loader.dataset)].copy()  
 
 def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
     '''
