@@ -243,7 +243,6 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 output = image_features @ text_features.T
 
             # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
-            # print(output.shape)
             if softmax:
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             else:
