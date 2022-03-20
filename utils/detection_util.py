@@ -6,6 +6,7 @@ import clip
 import torchvision
 import sklearn.metrics as sk
 from utils.common import get_features
+from utils.plot_util import plot_distribution
 import utils.svhn_loader as svhn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
@@ -60,11 +61,11 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     elif out_dataset == 'places365':
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
-        # root = '/nobackup/dataset_myf'
-        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
-        #                             transform=preprocess) 
-        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
+        root = '/nobackup/dataset_myf'
+        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
                                     transform=preprocess) 
+        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
+        #                             transform=preprocess) 
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
@@ -171,7 +172,6 @@ def get_ood_scores(args, net, loader, in_dist=False):
         for batch_idx, (data, target) in enumerate(loader):
             if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
                 break
-
             data = data.cuda()
             embed= net.encoder(data)
             # output,embed = net(data)
@@ -208,14 +208,14 @@ def get_ood_scores(args, net, loader, in_dist=False):
 
 def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     '''
-    used for scores based on img-caption product inner products: MSP (MIP), entropy, energy score. 
+    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
     '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
     _right_score = []
     _wrong_score = []
-    multi_template=args.score == 'MIPT'
+    multi_template= args.score == 'MIPT'
 
     tqdm_object = tqdm(loader, total=len(loader))
     if multi_template:
@@ -256,7 +256,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             elif args.score == 'entropy':  
                 from scipy.stats import entropy
                 _score.append(entropy(smax)) 
-            else: # original MSP and Mahalanobis (but Mahalanobis won't need this returned)
+            elif args.score in ['MIP', 'MIPT']:
                 _score.append(-np.max(smax, axis=1)) 
 
             if in_dist:
@@ -272,6 +272,49 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
         return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
     else:
         return concat(_score)[:len(loader.dataset)].copy()   
+
+def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
+    '''
+    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
+    '''
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    _right_score = []
+    _wrong_score = []
+
+    tqdm_object = tqdm(loader, total=len(loader))
+    with torch.no_grad():
+        for batch_idx, (images, labels) in enumerate(tqdm_object): #enumerate-> tqdm is the correct order; not tqdm -> enumerate
+            if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
+                break
+            labels = labels.long().cuda()
+            images = images.cuda()
+            image_features = net.encode_image(images).float()
+            if args.normalize: 
+                image_features /= image_features.norm(dim=-1, keepdim=True)  
+            output = classifier(image_features)
+            # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
+            smax = to_np(F.softmax(output/ args.T, dim=1))
+            if args.score == 'energy_logits':
+                #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
+                _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
+            elif args.score == 'MSP':
+                _score.append(-np.max(smax, axis=1)) 
+
+            if in_dist:
+                preds = np.argmax(smax, axis=1)
+                targets = labels.cpu().numpy().squeeze()
+                right_indices = preds == targets
+                wrong_indices = np.invert(right_indices)
+
+                _right_score.append(-np.max(smax[right_indices], axis=1))
+                _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+
+    if in_dist:
+        return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
+    else:
+        return concat(_score)[:len(loader.dataset)].copy()  
 
 def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
     '''
@@ -367,14 +410,27 @@ def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess,
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1))
         return concat(_score).copy()
-       
+
+def analysis_feature_manitude(args, net, preprocess, id_loader):
+    fid, _ = get_features(net, id_loader, args.device, False)
+    fid_norm = np.linalg.norm(fid, axis = 1)
+    if args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
+        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+    for out_dataset in out_datasets:
+        print(f"Evaluting OOD dataset {out_dataset}")
+        if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
+            ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, 
+                        root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
+            food, _ = get_features(net, ood_loader, args.device, False)
+            food_norm = np.linalg.norm(food, axis = 1)
+        plot_distribution(args, fid_norm, food_norm, out_dataset)
+
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
     used for KNN score. ID dataset only 
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    ftrain, _ = get_features(net, train_loader, device, args.normalize)
-    ftest,_ = get_features(net, test_loader, device, args.normalize)
+    ftrain, _ = get_features(net, train_loader, args.device, args.normalize)
+    ftest,_ = get_features(net, test_loader, args.device, args.normalize)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -388,8 +444,7 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     '''
     used for KNN score. OOD dataset only
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    food, _ = get_features(net, ood_loader, device, args.normalize)
+    food, _ = get_features(net, ood_loader, args.device, args.normalize)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]

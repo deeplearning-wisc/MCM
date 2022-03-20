@@ -71,10 +71,10 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
           image_dataset = CIFAR100(data_dir, transform=preprocess, download=True, train=train)
       elif image_dataset_name == 'CIFAR-10':
           image_dataset = CIFAR10(data_dir, transform=preprocess, download=True, train=train)
-    dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=0)
+    dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=4)
     return dataloader
 
-def get_features(model, dataloader, device, normalize = False, to_np = True):
+def get_features(args, model, dataloader, to_np = True):
     '''
     extract all image features from the dataset （unnormalized)
     V1.1: only supports CPU
@@ -83,8 +83,8 @@ def get_features(model, dataloader, device, normalize = False, to_np = True):
     all_labels = []
     with torch.no_grad():
         for images, labels in tqdm(dataloader):
-            features = model.encode_image(images.to(device))
-            if normalize: 
+            features = model.encode_image(images.to(args.device))
+            if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
             all_features.append(features)
             all_labels.append(labels)

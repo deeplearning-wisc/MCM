@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import torch
 import clip
+from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
 from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
 from utils.detection_util import *
@@ -14,50 +15,63 @@ from utils.train_eval_util import set_model, set_train_loader, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    #dataset
     parser.add_argument('--in_dataset', default='ImageNet100', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('--gpus', default=[3], nargs='*', type=int,
-                            help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
-    parser.add_argument('-b', '--batch-size', default=250, type=int,
+    parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
-    parser.add_argument('--score', default='MIPT', type=str, help='score options: MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT')
-
-    parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
+    #encoder loading
+    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
-                        choices=['ViT-B/32', 'ViT-B/16', 'RN50x4'], help='which pretrained img encoder to use')
-    parser.add_argument('--name', default = "test", type =str, help = "name of the run to be tested")
-    parser.add_argument('--epoch', default ="", type=str,
-                            help='which epoch to test')
+                        choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
+    #classifier loading
+    parser.add_argument('--epoch', default ="40", type=str,
+                             help='which epoch to test')
+    parser.add_argument('--classifier_ckpt', default ="ImageNet100_ViT-B-16_lr_1_decay_0_bsz_512_test_warm", type=str,
+                             help='which classifier to load')
+    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
+    #detection setting 
+    parser.add_argument('--score', default='MSP', type=str, help='score options: MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
-    parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
+    #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
+    parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")    
+    parser.add_argument('--server', default = "inst-01", type =str, 
+                choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
+    parser.add_argument('--gpus', default=[3], nargs='*', type=int,
+                            help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     args = parser.parse_args()
 
     args.gpus = list(map(lambda x: torch.device('cuda', x), args.gpus)) # will be used in set_model()
-    if args.in_dataset == "CIFAR-10":
+    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
         args.n_cls = 10
-    elif args.in_dataset == "CIFAR-100":
+    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
-    elif args.in_dataset == "ImageNet10":
-        args.n_cls = 10
-    elif args.in_dataset == "ImageNet100":
-        args.n_cls = 100
+
+    if args.server in ['inst-01', 'inst-04']:
+        args.root_dir = '/nobackup/dataset_myf'
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of classsifier
+    elif args.server in ['galaxy-01', 'galaxy-02']:
+        args.root_dir = '/nobackup-slow/dataset'
+    elif args.server in ['A100']:
+        args.root_dir = ''
+
     return args
 
 def get_test_labels(args):
     if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
-        test_labels = obtain_cifar_classes(root = '/nobackup/dataset_myf', which_cifar = args.in_dataset)
+        test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
     elif args.in_dataset ==  "ImageNet":
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clean.npy'), cleaned = True)
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
     elif args.in_dataset ==  "ImageNet100":
-        test_labels = obtain_ImageNet100_classes(loc = os.path.join('/nobackup-slow/dataset/ImageNet100'))
+        test_labels = obtain_ImageNet100_classes(loc = os.path.join(os.path.join(args.root_dir,'ImageNet100')))
     return test_labels
 
 
@@ -65,6 +79,8 @@ def main():
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
+    torch.cuda.set_device(args.gpus[0])
+    args.device = 'cuda'
     if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
         pretrained_dict= torch.load(args.ckpt,  map_location='cpu')['state_dict']
@@ -72,8 +88,16 @@ def main():
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #available option
-        torch.cuda.set_device(args.gpus[0])
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+    elif args.model == "CLIP-Linear": 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+        args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
+        linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
+        classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
+        classifier.load_state_dict(linear_probe_dict)
+        classifier.cuda()
+        classifier.eval()
+
 
     net.eval()
     test_labels = get_test_labels(args)
@@ -87,16 +111,18 @@ def main():
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
-        test_loader = set_val_loader(args, preprocess, root='/nobackup-slow/dataset')
-        train_loader = set_train_loader(args, preprocess, root='/nobackup-slow/dataset') # used for KNN and Maha score
-        # test_loader = set_val_loader(args, preprocess)
-        # train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
+        test_loader = set_val_loader(args, preprocess, root=args.root_dir)
+        train_loader = set_train_loader(args, preprocess, root=args.root_dir) # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
-    if args.score in ['MSP', 'energy', 'entropy', 'MIPT']:
+    if args.score == 'analyze':
+        analysis_feature_manitude(args, net, preprocess, test_loader) 
+        return 
+
+    if args.score in ['MIP', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits']:
         if args.model == 'CLIP':
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
-        else:
-            in_score, right_score, wrong_score= get_ood_scores(args, net, test_loader, in_dist=True)       
+        elif args.model == 'CLIP-Linear':
+            in_score, right_score, wrong_score= get_ood_scores_clip_linear(args, net, classifier, test_loader, in_dist=True)       
         num_right = len(right_score)
         num_wrong = len(wrong_score)
         log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
@@ -105,7 +131,7 @@ def main():
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
-        mean, prec = get_mean_prec(args, net, preprocess)
+        mean, prec = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
 
     if args.in_dataset == 'CIFAR-10':
         log.debug('\nUsing CIFAR-10 as typical data') 
@@ -122,6 +148,7 @@ def main():
     auroc_list, aupr_list, fpr_list = [], [], []
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
+        # if caption as input
         if args.score == 'MIPCT':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_MIPC_scores_clip(args, net, ood_text_df, test_labels)
@@ -131,18 +158,18 @@ def main():
         elif args.score == 'retrival':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
-        else:
+        else: # image as input 
             if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
-                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root='/nobackup-slow/dataset/ImageNet_OOD_dataset')
+                ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
             if args.score == 'knn':
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad)
-            else:
+            else: # non knn scores
                 if args.model == 'CLIP':
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
-                else:
-                    out_score = get_ood_scores(args, net, ood_loader)
+                elif args.model == 'CLIP-Linear':
+                    out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
         from scipy import stats
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
