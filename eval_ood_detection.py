@@ -14,6 +14,7 @@ from utils.train_eval_util import set_model, set_train_loader, set_val_loader
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
     parser.add_argument('--in_dataset', default='ImageNet100', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('--gpus', default=[3], nargs='*', type=int,
@@ -24,8 +25,8 @@ def process_args():
     parser.add_argument('--model', default='CLIP', type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
-    # parser.add_argument('--epoch', default ="", type=str,
-    #                         help='which epoch to test')
+    parser.add_argument('--epoch', default ="", type=str,
+                             help='which epoch to test')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     # parser.add_argument('--use_xent', '-x', action='store_true', help='Use cross entropy scoring instead of the MSP.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
@@ -38,16 +39,13 @@ def process_args():
     args = parser.parse_args()
 
     args.gpus = list(map(lambda x: torch.device('cuda', x), args.gpus)) # will be used in set_model()
-    if args.in_dataset == "CIFAR-10":
+    if args.img_dataset in ['CIFAR-10', 'ImageNet10']:
         args.n_cls = 10
-    elif args.in_dataset == "CIFAR-100":
+    elif args.img_dataset in ['CIFAR-100', 'ImageNet100']:
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
-    elif args.in_dataset == "ImageNet10":
-        args.n_cls = 10
-    elif args.in_dataset == "ImageNet100":
-        args.n_cls = 100
+
 
     if args.server in ['inst-01', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf'
@@ -74,6 +72,8 @@ def main():
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
+    torch.cuda.set_device(args.gpus[0])
+    args.device = 'cuda'
     if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
         pretrained_dict= torch.load(args.ckpt,  map_location='cpu')['state_dict']
@@ -81,8 +81,6 @@ def main():
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #available option
-        torch.cuda.set_device(args.gpus[0])
-        args.device = 'cuda'
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
 
     net.eval()

@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 from sklearn.utils import shuffle
 from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
-
 from utils import *
 
 def set_up_logger(args):
@@ -58,12 +57,6 @@ def set_optimizer(args, model):
                           momentum=args.momentum,
                           weight_decay=args.weight_decay)
     return optimizer
-
-def set_loader(args, preprocess): 
-    if args.img_dataset in ['CIFAR-10', 'CIFAR-100']:
-        train_loader = get_image_dataloader(args.img_dataset, preprocess, train = True)
-        test_loader = get_image_dataloader(args.img_dataset, preprocess, train = False)
-    return train_loader, test_loader
 
 def set_model(args):
     if args.model == 'clip':
@@ -148,9 +141,9 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     #dataset 
-    parser.add_argument('--img_dataset', type=str, default='CIFAR-10',
-                        choices=['CIFAR-10', 'CIFAR-100'], help='img dataset')
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--in_dataset', type=str, default='ImageNet100',
+                        choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
+    parser.add_argument('--gpu', default=2, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
@@ -161,7 +154,7 @@ def parse_option():
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
     #optimization basic
-    parser.add_argument('--epochs', type=int, default=50,
+    parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
     parser.add_argument('--learning_rate', type=float, default=1,
                         help='init lr')
@@ -172,7 +165,7 @@ def parse_option():
     parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
     # if linear lr decay (default)
-    parser.add_argument('--lr_decay_epochs', type=str, default='20,35,45',
+    parser.add_argument('--lr_decay_epochs', type=str, default='20,30,35',
                         help='where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.2,
                         help='decay rate for learning rate')
@@ -185,7 +178,7 @@ def parse_option():
     #logging & saving
     parser.add_argument('--print_freq', type=int, default=10,
                         help='print frequency (# of batch)')
-    parser.add_argument('--save_freq', type=int, default=20,
+    parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
     parser.add_argument('--unique_id', type=str, default='test',
                         help='id of the run')
@@ -197,9 +190,9 @@ def parse_option():
     cudnn.benchmark = True
 
     args.lr_decay_epochs = [int(epoch) for epoch in args.lr_decay_epochs.split(",")]
-
+    CKPT_MARKER = {'ViT-B/32':'ViT-B-32', 'ViT-B/16':'ViT-B-16', 'ViT-L/14':'ViT-L-14'}
     args.unique_id = '{}_{}_lr_{}_decay_{}_bsz_{}_{}'.\
-        format(args.img_dataset, args.ckpt, args.learning_rate, args.weight_decay,
+        format(args.in_dataset, CKPT_MARKER[args.ckpt], args.learning_rate, args.weight_decay,
                args.batch_size, args.unique_id)
     if args.cosine:
         args.unique_id = '{}_cosine'.format(args.unique_id)
@@ -215,8 +208,9 @@ def parse_option():
         else:
             args.warmup_to = args.learning_rate
     if args.server in ['inst-01', 'inst-04']:
-        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.img_dataset}'
-    args.log_directory = "linear_probe_logs/{img_dataset}/{unique_id}/".format(img_dataset=args.img_dataset, unique_id= args.unique_id)
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
+        args.root_dir = '/nobackup/dataset_myf'
+    args.log_directory = "linear_probe_logs/{in_dataset}/{unique_id}/".format(in_dataset=args.in_dataset, unique_id= args.unique_id)
     os.makedirs(args.save_dir, exist_ok=True)
     os.makedirs(args.log_directory, exist_ok=True)
 
@@ -226,18 +220,22 @@ def main():
     args = parse_option()
     
     # set up training 
-    if args.img_dataset == 'CIFAR-10':
+    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
         args.n_cls = 10
-    elif args.img_dataset == 'CIFAR-100':
+    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
         args.n_cls = 100
+    elif args.in_dataset == "ImageNet":
+        args.n_cls = 1000
 
     log = set_up_logger(args)
     preprocess, featurizer, classifier = set_model(args)
-    train_loader, val_loader = set_loader(args, preprocess)
+    val_loader = set_val_loader(args, preprocess, root=args.root_dir)
+    train_loader = set_train_loader(args, preprocess, root=args.root_dir)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = set_optimizer(args, classifier)
 
     # training routine
+    best_acc = 0
     for epoch in range(1, args.epochs + 1):
         adjust_learning_rate(args, optimizer, epoch)
         # train for one epoch
@@ -251,7 +249,7 @@ def main():
             best_acc = val_acc
         if epoch % args.save_freq == 0:
             save_file = os.path.join(
-                args.save_folder, f'{args.unique_id}_linear_probe_epoch_{epoch}.pth')
+                args.save_dir, f'{args.unique_id}_linear_probe_epoch_{epoch}.pth')
             save_model_clf(args, classifier, optimizer, epoch, save_file)
 
 if __name__ == '__main__':

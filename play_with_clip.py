@@ -81,7 +81,7 @@ def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     parser.add_argument('--img_dataset', type=str, default='CIFAR-10',
                         choices=['CIFAR-10', 'CIFAR-100'], help='img dataset')
-    parser.add_argument('--ckpt', type=str, default='ViT-L/14',
+    parser.add_argument('--ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
     
     # parser.add_argument('--feat_dim', type=int, default=784, help='feat dim')
@@ -114,26 +114,6 @@ if __name__ == '__main__':
         args.n_cls = 100
 
     args.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    args.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}_{}'.\
-        format(args.img_dataset, args.ckpt, args.learning_rate, args.weight_decay,
-               args.batch_size, args.name)
-    
-    if args.cosine:
-        args.model_name = '{}_cosine'.format(args.model_name)
-    # warm-up for large-batch training
-    if args.warm:
-        args.model_name = '{}_warm'.format(args.model_name)
-        args.warmup_from = 0.01
-        args.warm_epochs = 10
-        if args.cosine:
-            eta_min = args.learning_rate * (args.lr_decay_rate ** 3)
-            args.warmup_to = eta_min + (args.learning_rate - eta_min) * (
-                    1 + math.cos(math.pi * args.warm_epochs / args.epochs)) / 2
-        else:
-            args.warmup_to = args.learning_rate
-    if args.normalize: # do we need to normalize the feature 
-        args.model_name = '{}_normalize'.format(args.model_name)
     # indices = np.random.choice(len(c100_cls), size=10, replace=False)
     # import random
     # len = 100

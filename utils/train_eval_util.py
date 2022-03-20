@@ -18,15 +18,16 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
-    normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
     if preprocess == None:
+        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
+                                        std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
         preprocess = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize
             ])
-    kwargs = {'num_workers': 0, 'pin_memory': True}
+    kwargs = {'num_workers': 4, 'pin_memory': True}
     if batch_size is None:  #normal case: used for trainign
         batch_size = args.batch_size
         shuffle = True
@@ -62,13 +63,14 @@ def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
-    normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
     if preprocess == None:
+        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
+                                        std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
         preprocess = transforms.Compose([
         transforms.ToTensor(),
         normalize
         ])
-    kwargs = {'num_workers': 0, 'pin_memory': True}
+    kwargs = {'num_workers': 4, 'pin_memory': True}
     if args.in_dataset == "CIFAR-10":
         val_loader = torch.utils.data.DataLoader(
             datasets.CIFAR10(os.path.join(root, 'cifar10'), train=False,download=True, transform=preprocess),
