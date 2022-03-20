@@ -49,17 +49,18 @@ def obtain_ImageNet10_classes(loc = None):
 def obtain_ImageNet100_classes(loc):
     # sort by values
     class_set = set()
-    with open('data/ImageNet100/val_100.txt') as file:
+    with open('data/ImageNet100/class_list.txt') as file:
         for line in file.readlines():
-            class_set.add(line.split(' ')[1].strip())
+            class_set.add(line.strip())
 
     class_name_set = []
     with open('data/imagenet_class_index.json') as file: 
-        class_index = json.load(file)
+        class_index_raw = json.load(file)
+        class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
+        class_set = sorted(class_set)
         class_name_set = [class_index[c] for c in class_set]
     
-    class_name_set = sorted(class_name_set, key=lambda item: item[1])
-    class_name_set = [x[1] for x in class_name_set]
+    class_name_set = [x.replace('_', ' ') for x in class_name_set]
 
     return class_name_set
 

@@ -220,9 +220,9 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     tqdm_object = tqdm(loader, total=len(loader))
     if multi_template:
         num_temp = 80
-        text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels for temp in openai_imagenet_template[0:num_temp]]).cuda()
+        text_inputs_list = [torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda() for temp in openai_imagenet_template[0:num_temp]]
     else:
-        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+        text_inputs_list = [torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()]
 
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(tqdm_object):
@@ -231,25 +231,28 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             labels = labels.long().cuda()
             images = images.cuda()
             image_features = net.encode_image(images)
-            text_features = net.encode_text(text_inputs)
             image_features /= image_features.norm(dim=-1, keepdim=True)
-            text_features /= text_features.norm(dim=-1, keepdim=True)   
-            # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
-            output = image_features @ text_features.T
-
+            output_list = []
+            for i, text_inputs in enumerate(text_inputs_list):
+                # text_inputs_list[i].cuda()
+                text_features = net.encode_text(text_inputs_list[i])
+                text_features /= text_features.norm(dim=-1, keepdim=True)   
+                # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+                output = image_features @ text_features.T
+                output_list.append(output)
+            output_list = torch.cat(output_list)
             # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
-            # print(output.shape)
             if softmax:
-                smax = to_np(F.softmax(output/ args.T, dim=1))
+                smax = to_np(F.softmax(output_list/ args.T, dim=1))
             else:
-                smax = to_np(output/ args.T)
+                smax = to_np(output_list/ args.T)
 
             # if multi_template:
             #     smax = smax * num_temp
 
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
-                _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
+                _score.append(-to_np((args.T*torch.logsumexp(output_list / args.T, dim=1))))  #energy score is expected to be smaller for ID
             elif args.score == 'entropy':  
                 from scipy.stats import entropy
                 _score.append(entropy(smax)) 
