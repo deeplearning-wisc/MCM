@@ -14,12 +14,7 @@ def load_scores(args, dataset_name):
         scores = np.load(f)
     return scores
     
-def setup_log(args):
-    args.log_directory = "results/{in_dataset}/{score}/{T}_{name}".\
-                        format(in_dataset=args.in_dataset, name= args.name, score = args.score, T = args.T)
-    if not os.path.exists(args.log_directory):
-        os.makedirs(args.log_directory)
-    
+def setup_log(args):    
     log = logging.getLogger(__name__)
     formatter = logging.Formatter('%(asctime)s : %(message)s')
     fileHandler = logging.FileHandler(os.path.join(args.log_directory, "ood_eval_info.log"), mode='w')

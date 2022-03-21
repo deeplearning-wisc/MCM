@@ -229,7 +229,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
                 output = torch.zeros(bz,len(test_labels), device = args.device)
-                template_weights = [0.4,0.15,0.15,0.15,0.15]
+                # template_weights = [0.4,0.15,0.15,0.15,0.15]
+                template_weights = [0.2,0.2,0.2,0.2,0.2]
                 for i, temp in enumerate(openai_imagenet_template_subset):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
@@ -247,10 +248,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             else:
                 smax = to_np(output/ args.T)
-
             # if multi_template:
             #     smax = smax * num_temp
-
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
                 _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
