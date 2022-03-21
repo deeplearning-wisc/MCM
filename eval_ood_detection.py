@@ -61,7 +61,7 @@ def process_args():
     elif args.server in ['A100']:
         args.root_dir = ''
 
-    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.ckpt}_T_{args.T}_ID_{args.name}"
+    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
