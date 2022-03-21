@@ -36,9 +36,9 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
         # root_tmp= "/nobackup-slow/dataset/places365_test/test_subset" #galaxy
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'places365'),
             transform=preprocess)
-    elif out_dataset == 'cifar100':
+    elif out_dataset == 'CIFAR-100':
         testsetout = torchvision.datasets.CIFAR100(root=os.path.join(root, 'cifar100'), train=False, download=True, transform=preprocess)
-    elif out_dataset == 'cifar10':
+    elif out_dataset == 'CIFAR-10':
         testsetout = torchvision.datasets.CIFAR10(root=os.path.join(root, 'cifar10'), train=False, download=True, transform=preprocess)
     else:
         testsetout = torchvision.datasets.ImageFolder(os.path.join(root, "ood_datasets", f"{out_dataset}"),
@@ -275,7 +275,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
 
 def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
     '''
-    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
+    used for scores based on logit layer (i.e. after fine-tuning a linear layer): MSP, entropy_logits, energy score. 
     '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
@@ -427,10 +427,10 @@ def analysis_feature_manitude(args, net, preprocess, id_loader):
 
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
-    used for KNN score. ID dataset only 
+    used for KNN score for ID dataset  
     '''
-    ftrain, _ = get_features(net, train_loader, args.device, args.normalize)
-    ftest,_ = get_features(net, test_loader, args.device, args.normalize)
+    ftrain, _ = get_features(args, net, train_loader)
+    ftest,_ = get_features(args, net, test_loader)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -442,9 +442,9 @@ def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader
 
 def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     '''
-    used for KNN score. OOD dataset only
+    used for KNN score for OOD dataset
     '''
-    food, _ = get_features(net, ood_loader, args.device, args.normalize)
+    food, _ = get_features(args, net, ood_loader)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]

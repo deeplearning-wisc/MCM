@@ -76,8 +76,7 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
 
 def get_features(args, model, dataloader, to_np = True):
     '''
-    extract all image features from the dataset （unnormalized)
-    V1.1: only supports CPU
+    extract all image features from the dataset
     '''
     all_features = []
     all_labels = []
@@ -176,6 +175,7 @@ def evaluate_classification_mclip(dataloader, test_labels, visual_model, text_mo
           top1.update(precs[0].item(), images.size(0))
           top5.update(precs[1].item(), images.size(0))
     print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
+    
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
