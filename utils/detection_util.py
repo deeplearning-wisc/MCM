@@ -412,8 +412,10 @@ def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess,
         return concat(_score).copy()
 
 def analysis_feature_manitude(args, net, preprocess, id_loader):
-    fid, _ = get_features(net, id_loader, args.device, False)
+    args.normalize = False
+    fid, _ = get_features(args, net, id_loader)
     fid_norm = np.linalg.norm(fid, axis = 1)
+    print(f"in norms: {stats.describe(fid_norm)}")
     if args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
     for out_dataset in out_datasets:
@@ -421,8 +423,9 @@ def analysis_feature_manitude(args, net, preprocess, id_loader):
         if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, 
                         root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
-            food, _ = get_features(net, ood_loader, args.device, False)
+            food, _ = get_features(args, net, ood_loader)
             food_norm = np.linalg.norm(food, axis = 1)
+        print(f"out norms: {stats.describe(food_norm)}")
         plot_distribution(args, fid_norm, food_norm, out_dataset)
 
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):

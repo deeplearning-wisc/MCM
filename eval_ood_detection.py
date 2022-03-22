@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import torch
 import clip
+from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
 from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
@@ -31,7 +32,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     #detection setting 
-    parser.add_argument('--score', default='knn', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='analyze', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
@@ -41,7 +42,7 @@ def process_args():
     parser.add_argument('--name', default = "norm", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpus', default=[2], nargs='*', type=int,
+    parser.add_argument('--gpus', default=[3], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     args = parser.parse_args()
 
@@ -173,7 +174,6 @@ def main():
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 elif args.model == 'CLIP-Linear':
                     out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
-        from scipy import stats
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
         plot_distribution(args, in_score, out_score, out_dataset)
