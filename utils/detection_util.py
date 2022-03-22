@@ -418,15 +418,19 @@ def analysis_feature_manitude(args, net, preprocess, id_loader):
     print(f"in norms: {stats.describe(fid_norm)}")
     if args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+    elif args.in_dataset == 'CIFAR-10':
+        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-100']
     for out_dataset in out_datasets:
         print(f"Evaluting OOD dataset {out_dataset}")
         if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, 
                         root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
-            food, _ = get_features(args, net, ood_loader)
-            food_norm = np.linalg.norm(food, axis = 1)
+        else: #for CIFAR
+            ood_loader = set_ood_loader(args, out_dataset, preprocess)
+        food, _ = get_features(args, net, ood_loader)
+        food_norm = np.linalg.norm(food, axis = 1)
         print(f"out norms: {stats.describe(food_norm)}")
-        plot_distribution(args, fid_norm, food_norm, out_dataset)
+        plot_distribution(args, -fid_norm, -food_norm, out_dataset)
 
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
