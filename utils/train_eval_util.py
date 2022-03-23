@@ -46,7 +46,7 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
             path = os.path.join(root, 'ILSVRC-2012', 'train')
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(path, transform=preprocess),
-                batch_size=args.batch_size, shuffle=False, **kwargs)
+                batch_size=args.batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet10":
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
