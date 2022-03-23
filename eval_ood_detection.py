@@ -42,7 +42,7 @@ def process_args():
     parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpus', default=2, nargs='*', type=int,
+    parser.add_argument('--gpus', default=[2], nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     args = parser.parse_args()
 
