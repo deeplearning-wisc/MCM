@@ -32,7 +32,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     #detection setting 
-    parser.add_argument('--score', default='MIP', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='MIPT', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
@@ -42,11 +42,10 @@ def process_args():
     parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpus', default=2, nargs='*', type=int,
-                            help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
+    parser.add_argument('--gpu', default=4, type=int,
+                        help='the GPU indice to use')
     args = parser.parse_args()
 
-    args.gpus = list(map(lambda x: torch.device('cuda', x), args.gpus)) # will be used in set_model()
     if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
         args.n_cls = 10
     elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
@@ -83,7 +82,7 @@ def main():
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
-    torch.cuda.set_device(args.gpus[0])
+    torch.cuda.set_device(args.gpu)
     args.device = 'cuda'
     if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
@@ -92,9 +91,9 @@ def main():
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #pre-trained CLIP
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
     elif args.model == "CLIP-Linear": #fine-tuned CLIP (linear layer only)
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
         args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
         linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
         classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
