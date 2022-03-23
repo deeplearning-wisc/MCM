@@ -21,8 +21,8 @@ def get_params(description = 'Training clip'):
     # training  
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument("--lr", type=float, default=5e-8)
+    parser.add_argument("--weight_decay", type=float, default=1e-3)
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--factor", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.1)
@@ -42,10 +42,10 @@ def get_params(description = 'Training clip'):
     #data loading
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     parser.add_argument("--root_dir", type=str, default='data', help="data root dir")
-    parser.add_argument("--lang", type=str, default='en', help="caption language")
+    parser.add_argument("--lang", type=str, default='es', help="caption language")
     parser.add_argument("--dataset", type=str, default='COCO', help="image dataset")
     #logging
-    parser.add_argument("--unique_id", type=str, default='en_32_adamw', help="data root dir")
+    parser.add_argument("--unique_id", type=str, default='es_32_adamw', help="data root dir")
 
 
     # parse parameters
@@ -111,9 +111,10 @@ def train(params, model, tokenizer, logf, writer):
         model.parameters(), lr=params.lr, weight_decay=params.weight_decay
     )
     # optimizer = torch.optim.SGD(model.parameters(), params.lr)
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", patience=1, factor=0.8
-    )
+    # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode="min", patience=1, factor=0.8
+    # )
+    lr_scheduler=torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=1000, eta_min=0, last_epoch=-1, verbose=False)
     # lambda1 = lambda epoch: epoch // 30
     # lambda2 = lambda epoch: 0.95 ** epoch
     # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda2)
@@ -139,6 +140,7 @@ def train(params, model, tokenizer, logf, writer):
             log_write(logf, f"Saved Model at epoch {epoch}")
         lr_scheduler.step(valid_loss.avg)
         log_write(logf, "epoch {} train_loss: {:.4f} val_loss: {:.4f}".format(epoch, train_loss.avg, valid_loss.avg))
+    lr_scheduler.step()
 
 def valid_epoch(params, model, tokenizer, global_step):
     loss_meter = AverageMeter()

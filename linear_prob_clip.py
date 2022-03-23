@@ -143,7 +143,7 @@ def parse_option():
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=7, type=int,
+    parser.add_argument('--gpu', default=5, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
@@ -156,7 +156,7 @@ def parse_option():
     #optimization basic
     parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.5,
+    parser.add_argument('--learning_rate', type=float, default=2,
                         help='init lr')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
@@ -180,7 +180,7 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_02',
+    parser.add_argument('--unique_id', type=str, default='test_04',
                         help='id of the run')
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     args = parser.parse_args()

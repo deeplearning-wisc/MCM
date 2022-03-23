@@ -16,10 +16,7 @@ def build_caption_dataframe(params, option = 'train'):
     elif option == 'val':
         image_path =os.path.join(params.image_dir, "val2014")
         captions_path = os.path.join(params.captions_dir, "processed_captions_val2014.csv")
-    if params.lang == 'es':
-        df = pd.read_csv(f"{captions_path}", encoding = 'utf-8-sig')
-    elif params.lang == 'en':
-        df = pd.read_csv(f"{captions_path}")
+    df = pd.read_csv(f"{captions_path}")
     x = list(set(df['image_id'].values))
     image_ids = np.arange(0, len(x))
     images = [x[i] for i in image_ids]
