@@ -36,9 +36,9 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
         # root_tmp= "/nobackup-slow/dataset/places365_test/test_subset" #galaxy
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'places365'),
             transform=preprocess)
-    elif out_dataset == 'cifar100':
+    elif out_dataset == 'CIFAR-100':
         testsetout = torchvision.datasets.CIFAR100(root=os.path.join(root, 'cifar100'), train=False, download=True, transform=preprocess)
-    elif out_dataset == 'cifar10':
+    elif out_dataset == 'CIFAR-10':
         testsetout = torchvision.datasets.CIFAR10(root=os.path.join(root, 'cifar10'), train=False, download=True, transform=preprocess)
     else:
         testsetout = torchvision.datasets.ImageFolder(os.path.join(root, "ood_datasets", f"{out_dataset}"),
@@ -231,9 +231,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
                 output = torch.zeros(bz,len(test_labels), device = args.device)
-                temp_len = len(openai_imagenet_template)
-                template_weights = [0.4,0.15,0.15,0.15,0.15]
-                # template_weights = [1 / temp_len for _ in range(0, temp_len)]
+                # template_weights = [0.4,0.15,0.15,0.15,0.15]
+                template_weights = [0.2,0.2,0.2,0.2,0.2]
                 for i, temp in enumerate(openai_imagenet_template_subset):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
@@ -264,10 +263,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             else:
                 smax = to_np(output/ args.T)
-
             # if multi_template:
             #     smax = smax * num_temp
-
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
                 _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
@@ -293,7 +290,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
 
 def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
     '''
-    used for scores based on img-caption product inner products: MIP, entropy, energy score. 
+    used for scores based on logit layer (i.e. after fine-tuning a linear layer): MSP, entropy_logits, energy score. 
     '''
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
@@ -430,25 +427,32 @@ def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess,
         return concat(_score).copy()
 
 def analysis_feature_manitude(args, net, preprocess, id_loader):
-    fid, _ = get_features(net, id_loader, args.device, False)
+    args.normalize = False
+    fid, _ = get_features(args, net, id_loader)
     fid_norm = np.linalg.norm(fid, axis = 1)
+    print(f"in norms: {stats.describe(fid_norm)}")
     if args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+    elif args.in_dataset == 'CIFAR-10':
+        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-100']
     for out_dataset in out_datasets:
         print(f"Evaluting OOD dataset {out_dataset}")
         if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, 
                         root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
-            food, _ = get_features(net, ood_loader, args.device, False)
-            food_norm = np.linalg.norm(food, axis = 1)
-        plot_distribution(args, fid_norm, food_norm, out_dataset)
+        else: #for CIFAR
+            ood_loader = set_ood_loader(args, out_dataset, preprocess)
+        food, _ = get_features(args, net, ood_loader)
+        food_norm = np.linalg.norm(food, axis = 1)
+        print(f"out norms: {stats.describe(food_norm)}")
+        plot_distribution(args, -fid_norm, -food_norm, out_dataset)
 
 def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader):
     '''
-    used for KNN score. ID dataset only 
+    used for KNN score for ID dataset  
     '''
-    ftrain, _ = get_features(net, train_loader, args.device, args.normalize)
-    ftest,_ = get_features(net, test_loader, args.device, args.normalize)
+    ftrain, _ = get_features(args, net, train_loader)
+    ftest,_ = get_features(args, net, test_loader)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -460,9 +464,9 @@ def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader
 
 def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     '''
-    used for KNN score. OOD dataset only
+    used for KNN score for OOD dataset
     '''
-    food, _ = get_features(net, ood_loader, args.device, args.normalize)
+    food, _ = get_features(args, net, ood_loader)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]

@@ -40,13 +40,13 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
                     datasets.CIFAR100(os.path.join(root, 'cifar100'), train=True, download=True, transform=preprocess),
                     batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet":
-        # root = '/nobackup/ImageNet' #inst-01
-        # val_loader = torch.utils.data.DataLoader(
-        #         datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
-        #         batch_size=args.batch_size, shuffle=False, **kwargs)
+        if args.server in ['inst-01', 'inst-04']:
+            path = os.path.join('/nobackup','ImageNet','train')
+        elif args.server in ['galaxy-01', 'galaxy-02']:
+            path = os.path.join(root, 'ILSVRC-2012', 'train')
         train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ILSVRC-2012', 'train'), transform=preprocess),
-                batch_size=args.batch_size, shuffle=False, **kwargs)
+                datasets.ImageFolder(path, transform=preprocess),
+                batch_size=args.batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet10":
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
@@ -81,12 +81,12 @@ def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
             datasets.CIFAR100(os.path.join(root, 'cifar100'), train=False, download=True,transform=preprocess),
             batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet":
-        # root = '/nobackup/ImageNet' #inst-01
-        # val_loader = torch.utils.data.DataLoader(
-        #         datasets.ImageFolder(os.path.join(root, 'val'), transform=preprocess),
-        #         batch_size=args.batch_size, shuffle=False, **kwargs)
+        if args.server in ['inst-01', 'inst-04']:
+            path = os.path.join('/nobackup','ImageNet','val')
+        elif args.server in ['galaxy-01', 'galaxy-02']:
+            path = os.path.join(root, 'ILSVRC-2012', 'val')
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ILSVRC-2012', 'val'), transform=preprocess),
+                datasets.ImageFolder(path, transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet10":
         val_loader = torch.utils.data.DataLoader(

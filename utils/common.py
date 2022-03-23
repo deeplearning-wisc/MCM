@@ -23,9 +23,8 @@ def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
         cifar = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
     return cifar.classes
 
-def obtain_ImageNet_classes(loc, cleaned = False):
-    if not cleaned:
-        import json
+def obtain_ImageNet_classes(loc, option = 'clean'):
+    if option == 'original':
         # idx2label = []
         cls2label = {}
         with open(loc, "r") as read_file:
@@ -33,10 +32,13 @@ def obtain_ImageNet_classes(loc, cleaned = False):
             # idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
             cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
         return cls2label.values()
-    else:
-        with open(loc, 'rb') as f:
+    elif option == 'clean':
+        with open(os.path.join(loc,'imagenet_class_clean.npy'), 'rb') as f:
             imagenet_cls = np.load(f)
-        return imagenet_cls
+    elif option == 'simple':
+        with open(os.path.join(loc,'imagenet-simple-labels.json')) as f:
+            imagenet_cls = json.load(f)
+    return imagenet_cls
 
 def obtain_ImageNet10_classes(loc = None):
     class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
@@ -76,8 +78,7 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
 
 def get_features(args, model, dataloader, to_np = True):
     '''
-    extract all image features from the dataset （unnormalized)
-    V1.1: only supports CPU
+    extract all image features from the dataset
     '''
     all_features = []
     all_labels = []
@@ -176,6 +177,7 @@ def evaluate_classification_mclip(dataloader, test_labels, visual_model, text_mo
           top1.update(precs[0].item(), images.size(0))
           top5.update(precs[1].item(), images.size(0))
     print(f"Classification Top 1 acc: {top1.avg}; Top 5 acc: {top5.avg}")
+    
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)

@@ -141,9 +141,9 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     #dataset 
-    parser.add_argument('--in_dataset', type=str, default='ImageNet100',
+    parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=2, type=int,
+    parser.add_argument('--gpu', default=5, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
@@ -156,7 +156,7 @@ def parse_option():
     #optimization basic
     parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=1,
+    parser.add_argument('--learning_rate', type=float, default=2,
                         help='init lr')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
@@ -180,7 +180,7 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test',
+    parser.add_argument('--unique_id', type=str, default='test_04',
                         help='id of the run')
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     args = parser.parse_args()
@@ -216,7 +216,7 @@ def parse_option():
 
     return args
 
-def main():
+def linear_probe_pytorch():
     args = parse_option()
     
     # set up training 
@@ -252,5 +252,35 @@ def main():
                 args.save_dir, f'{args.unique_id}_linear_probe_epoch_{epoch}.pth')
             save_model_clf(args, classifier, optimizer, epoch, save_file)
 
+def linear_probe_sklearn():
+    '''
+    train a logistic regression on top of frozen image features extracted by CLIP image encoder (ViT or ResNet)
+    CPU version with sklearn
+    '''
+    args = parse_option()
+    # set up training 
+    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
+        args.n_cls = 10
+    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
+        args.n_cls = 100
+    elif args.in_dataset == "ImageNet":
+        args.n_cls = 1000
+    preprocess, model, classifier = set_model(args)
+    val_loader = set_val_loader(args, preprocess, root=args.root_dir)
+    train_loader = set_train_loader(args, preprocess, root=args.root_dir)
+    from sklearn.linear_model import LogisticRegression
+
+    train_features, train_labels = get_features(args, model, train_loader, to_np = True)
+    test_features, test_labels = get_features(args, model, val_loader, to_np = True)
+    # Note: C is the inverse of regularization strength; must be a positive float. 
+    # Like in support vector machines, smaller values specify stronger regularization.
+    classifier = LogisticRegression(random_state=0, C=0.316, max_iter=1000, verbose=1)
+    classifier.fit(train_features, train_labels)
+    # Evaluate using the logistic regression classifier
+    predictions = classifier.predict(test_features)
+    accuracy = np.mean((test_labels == predictions).astype(float)) * 100.
+    print(f"Accuracy = {accuracy:.3f}")
+
 if __name__ == '__main__':
-    main()
+    linear_probe_pytorch()
+    # linear_probe_sklearn()

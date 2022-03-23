@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import torch
 import clip
+from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
 from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
@@ -16,22 +17,22 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet100', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
-    parser.add_argument('--epoch', default ="40", type=str,
+    parser.add_argument('--epoch', default ="20", type=str,
                              help='which epoch to test')
-    parser.add_argument('--classifier_ckpt', default ="ImageNet100_ViT-B-16_lr_1_decay_0_bsz_512_test_warm", type=str,
+    parser.add_argument('--classifier_ckpt', default ="ImageNet10_ViT-B-16_lr_1_decay_0_bsz_512_test_warm", type=str,
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     #detection setting 
-    parser.add_argument('--score', default='MIPT', type=str, help='score options: MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='MIP', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
@@ -41,7 +42,7 @@ def process_args():
     parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpus', default=[3], nargs='*', type=int,
+    parser.add_argument('--gpus', default=2, nargs='*', type=int,
                             help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
     args = parser.parse_args()
 
@@ -52,13 +53,17 @@ def process_args():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
+    
     if args.server in ['inst-01', 'inst-04']:
-        args.root_dir = '/nobackup/dataset_myf'
-        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of classsifier
+        args.root_dir = '/nobackup/dataset_myf' #save dir of dataset
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['galaxy-01', 'galaxy-02']:
         args.root_dir = '/nobackup-slow/dataset'
     elif args.server in ['A100']:
         args.root_dir = ''
+
+    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
+    os.makedirs(args.log_directory, exist_ok= True)
 
     return args
 
@@ -66,7 +71,7 @@ def get_test_labels(args):
     if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
         test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
     elif args.in_dataset ==  "ImageNet":
-        test_labels = obtain_ImageNet_classes(loc = os.path.join('data','imagenet_class_clean.npy'), cleaned = True)
+        test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'simple')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
     elif args.in_dataset ==  "ImageNet100":
@@ -86,9 +91,9 @@ def main():
         pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
-    elif args.model == "CLIP": #available option
+    elif args.model == "CLIP": #pre-trained CLIP
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
-    elif args.model == "CLIP-Linear": 
+    elif args.model == "CLIP-Linear": #fine-tuned CLIP (linear layer only)
         net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
         args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
         linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
@@ -134,11 +139,11 @@ def main():
 
     if args.in_dataset == 'CIFAR-10':
         log.debug('\nUsing CIFAR-10 as typical data') 
-        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
+        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-100']
     elif args.in_dataset == 'CIFAR-100': 
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
-        out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN']
+        out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
@@ -169,7 +174,6 @@ def main():
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 elif args.model == 'CLIP-Linear':
                     out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
-        from scipy import stats
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
         plot_distribution(args, in_score, out_score, out_dataset)
