@@ -282,5 +282,5 @@ def linear_probe_sklearn():
     print(f"Accuracy = {accuracy:.3f}")
 
 if __name__ == '__main__':
-    # linear_probe_pytorch()
-    linear_probe_sklearn()
+    linear_probe_pytorch()
+    # linear_probe_sklearn()

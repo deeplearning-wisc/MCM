@@ -23,9 +23,8 @@ def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
         cifar = CIFAR10( os.path.join(root, 'cifar10'), download=True, train=False)
     return cifar.classes
 
-def obtain_ImageNet_classes(loc, cleaned = False):
-    if not cleaned:
-        import json
+def obtain_ImageNet_classes(loc, option = 'clean'):
+    if option == 'original':
         # idx2label = []
         cls2label = {}
         with open(loc, "r") as read_file:
@@ -33,10 +32,13 @@ def obtain_ImageNet_classes(loc, cleaned = False):
             # idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
             cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
         return cls2label.values()
-    else:
-        with open(loc, 'rb') as f:
+    elif option == 'clean':
+        with open(os.path.join(loc,'imagenet_class_clean.npy'), 'rb') as f:
             imagenet_cls = np.load(f)
-        return imagenet_cls
+    elif option == 'simple':
+        with open(os.path.join(loc,'imagenet-simple-labels.json')) as f:
+            imagenet_cls = json.load(f)
+    return imagenet_cls
 
 def obtain_ImageNet10_classes(loc = None):
     class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
