@@ -61,11 +61,13 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     elif out_dataset == 'places365':
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
-        root = '/nobackup/dataset_myf'
-        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
-                                    transform=preprocess) 
-        # testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
-        #                             transform=preprocess) 
+        if args.server == 'galaxy-01':
+            testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
+                                    transform=preprocess)
+        else:
+            root = '/nobackup/dataset_myf'
+            testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
+                                        transform=preprocess)
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
@@ -229,12 +231,27 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
                 output = torch.zeros(bz,len(test_labels), device = args.device)
+                temp_len = len(openai_imagenet_template)
                 template_weights = [0.4,0.15,0.15,0.15,0.15]
+                # template_weights = [1 / temp_len for _ in range(0, temp_len)]
                 for i, temp in enumerate(openai_imagenet_template_subset):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
                     text_features /= text_features.norm(dim=-1, keepdim=True) 
                     output += image_features @ text_features.T * template_weights[i]
+                
+                # zeroshot_weights = []
+                # for i, c in enumerate(test_labels):
+                #     texts = [temp(c) for temp in openai_imagenet_template_subset]
+                #     text_inputs = clip.tokenize(texts).cuda()
+                #     text_features = net.encode_text(text_inputs)
+                #     text_features /= text_features.norm(dim=-1, keepdim=True) 
+                #     text_feature = text_features.mean(dim=0)
+                #     text_feature /= text_feature.norm()
+                #     zeroshot_weights.append(text_feature)
+                #     # output += image_features @ text_features.T * template_weights[i]
+                # zeroshot_weights = torch.stack(zeroshot_weights, dim=1).cuda()
+                # output = 100. * image_features @ zeroshot_weights
             else:
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs)

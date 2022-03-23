@@ -52,7 +52,6 @@ def process_args():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
-
     if args.server in ['inst-01', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf'
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of classsifier
@@ -109,7 +108,7 @@ def main():
         elif args.score == 'MIPCI':
             in_score = get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess)
         elif args.score == 'retrival':
-            in_score = get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
+            in_score = get_retrival_scores_clip(args, net, text_df, 12, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
         test_loader = set_val_loader(args, preprocess, root=args.root_dir)
         train_loader = set_train_loader(args, preprocess, root=args.root_dir) # used for KNN and Maha score
