@@ -42,8 +42,13 @@ def process_args():
     parser.add_argument('--name', default = "test", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
+<<<<<<< HEAD
     parser.add_argument('--gpu', default=4, type=int,
                         help='the GPU indice to use')
+=======
+    parser.add_argument('--gpus', default=[2], nargs='*', type=int,
+                            help='List of GPU indices to use, e.g., --gpus 0 1 2 3')
+>>>>>>> 0ef832bba62231660effae73e77b798db616ebc7
     args = parser.parse_args()
 
     if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
