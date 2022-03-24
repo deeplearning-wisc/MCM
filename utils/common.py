@@ -56,7 +56,7 @@ def obtain_ImageNet100_classes(loc):
             class_set.add(line.strip())
 
     class_name_set = []
-    with open('data/imagenet_class_index.json') as file: 
+    with open('data/ImageNet/imagenet_class_index.json') as file: 
         class_index_raw = json.load(file)
         class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
         class_set = sorted(class_set)

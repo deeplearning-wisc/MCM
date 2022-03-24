@@ -227,26 +227,29 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             bz = images.size(0)
             labels = labels.long().cuda()
             images = images.cuda()
-            image_features = net.encode_image(images)
+            image_features = net.encode_image(images).float()
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
-                output = torch.zeros(bz,len(test_labels), device = args.device)
+                templates = openai_imagenet_template_subset[0]
+
+                # output = torch.zeros(bz,len(test_labels), device = args.device)
                 # template_weights = [0.4,0.15,0.15,0.15,0.15]
                 template_weights = [0.2,0.2,0.2,0.2,0.2]
-                text_features_avg = torch.zeros(args.feat_dim, device = args.device)
-                for i, temp in enumerate(openai_imagenet_template_subset[0]):
+                # template_weights = [1 / len(templates) for _ in templates]
+                text_features_avg = torch.zeros((len(test_labels), args.feat_dim), device = args.device)
+                for i, temp in enumerate(templates):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
-                    text_features = net.encode_text(text_inputs)
-                    text_features /= text_features.norm(dim=-1, keepdim=True) 
+                    text_features = net.encode_text(text_inputs).float()
+                    text_features /= text_features.norm(dim=-1, keepdim=True)
                     text_features_avg += text_features * template_weights[i]
-                text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
+                text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True)
                 output = image_features @ text_features_avg.T 
                 
                 # zeroshot_weights = []
                 # for i, c in enumerate(test_labels):
-                #     texts = [temp(c) for temp in openai_imagenet_template_subset]
+                #     texts = [temp(c) for temp in templates]
                 #     text_inputs = clip.tokenize(texts).cuda()
-                #     text_features = net.encode_text(text_inputs)
+                #     text_features = net.encode_text(text_inputs).float()
                 #     text_features /= text_features.norm(dim=-1, keepdim=True) 
                 #     text_feature = text_features.mean(dim=0)
                 #     text_feature /= text_feature.norm()
