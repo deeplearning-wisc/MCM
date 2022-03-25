@@ -82,20 +82,21 @@ openai_imagenet_template = [
 ]
 
 
-openai_imagenet_template_subset = {0: [
+openai_imagenet_template_subset = {
+    0: [
     lambda c: f'a photo of a {c}.',
     lambda c: f'a blurry photo of a {c}.',
     lambda c: f'a photo of many {c}.',
     lambda c: f'a photo of the large {c}.',
     lambda c: f'a photo of the small {c}.',
-], 
-1: [
-    lambda c: 'itap of my {c}.',
-    lambda c: 'a bad photo of a {c}.',
-    lambda c: 'a origami {c}.',
-    lambda c: 'a photo of the large {c}.',
-    lambda c: 'a {c} in a video game.',
-    lambda c: 'art of the {c}.',
-    lambda c: 'a photo of the small {c}.',
-]
+    ], 
+    1: [
+        lambda c: f'itap of my {c}.',
+        lambda c: f'a bad photo of a {c}.',
+        lambda c: f'a origami {c}.',
+        lambda c: f'a photo of the large {c}.',
+        lambda c: f'a {c} in a video game.',
+        lambda c: f'art of the {c}.',
+        lambda c: f'a photo of the small {c}.',
+    ]
 }

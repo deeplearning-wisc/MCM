@@ -168,7 +168,7 @@ if __name__ == "__main__":
     model = CLIPModel.from_pretrained(params.ckpt).to(params.device)
     log_dir = 'train_results/logs'
     os.makedirs(log_dir, exist_ok = True)
-    logf = open(os.path.join(log_dir, f'{params.dataset}_{params.lang}.out'), 'w')
+    logf = open(os.path.join(log_dir, f'{params.dataset}_{params.lang}_{params.unique_id}.out'), 'w')
     writer = SummaryWriter(log_dir= os.path.join(log_dir, params.unique_id))
 
     if params.resume:

@@ -227,18 +227,18 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             bz = images.size(0)
             labels = labels.long().cuda()
             images = images.cuda()
-            image_features = net.encode_image(images)
+            image_features = net.encode_image(images).float()
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
                 output = torch.zeros(bz,len(test_labels), device = args.device)
                 # template_weights = [0.4,0.15,0.15,0.15,0.15]
-                template_weights = [0.2,0.2,0.2,0.2,0.2]
-                text_features_avg = torch.zeros(args.feat_dim, device = args.device)
-                for i, temp in enumerate(openai_imagenet_template_subset[0]):
+                # template_weights = [0.2,0.2,0.2,0.2,0.2]
+                text_features_avg = torch.zeros(args.n_cls, 768, device = args.device)
+                for i, temp in enumerate(openai_imagenet_template_subset[1]):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
                     text_features /= text_features.norm(dim=-1, keepdim=True) 
-                    text_features_avg += text_features * template_weights[i]
+                    text_features_avg += text_features * 1/7
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
                 
