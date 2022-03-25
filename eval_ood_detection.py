@@ -82,7 +82,7 @@ def main():
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
-    torch.cuda.set_device(args.gpu)
+    torch.cuda.set_device(args.gpus[0])
     args.device = 'cuda'
     if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
@@ -91,9 +91,9 @@ def main():
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #pre-trained CLIP
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
     elif args.model == "CLIP-Linear": #fine-tuned CLIP (linear layer only)
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
         args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
         linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
         classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
