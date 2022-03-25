@@ -19,20 +19,20 @@ def process_args():
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
+    parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-L/14',
+    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
-    parser.add_argument('--epoch', default ="20", type=str,
+    parser.add_argument('--epoch', default ="40", type=str,
                              help='which epoch to test')
-    parser.add_argument('--classifier_ckpt', default ="ImageNet10_ViT-B-16_lr_1_decay_0_bsz_512_test_warm", type=str,
+    parser.add_argument('--classifier_ckpt', default ="ImageNet_ViT-B-16_lr_0.5_decay_0_bsz_512_test_02_warm", type=str,
                              help='which classifier to load')
-    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
+    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting 
-    parser.add_argument('--score', default='MIPT', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='MSP', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
@@ -82,7 +82,7 @@ def main():
     args = process_args()
     setup_seed(args)
     log = setup_log(args)
-    torch.cuda.set_device(args.gpus[0])
+    torch.cuda.set_device(args.gpu)
     args.device = 'cuda'
     if args.model == 'resnet34': #not available now
         args.ckpt = f"/nobackup/checkpoints/{args.in_dataset}/{args.name}/checkpoint_{args.epoch}.pth.tar"
@@ -91,9 +91,9 @@ def main():
         net = set_model(args)
         net.load_state_dict(pretrained_dict)
     elif args.model == "CLIP": #pre-trained CLIP
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
     elif args.model == "CLIP-Linear": #fine-tuned CLIP (linear layer only)
-        net, preprocess = clip.load(args.CLIP_ckpt, args.gpus[0]) 
+        net, preprocess = clip.load(args.CLIP_ckpt, args.gpu) 
         args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
         linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
         classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
