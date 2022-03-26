@@ -258,7 +258,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 # output = 100. * image_features @ zeroshot_weights
             else:
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
-                text_features = net.encode_text(text_inputs)
+                text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
             # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
                 output = image_features @ text_features.T
@@ -477,14 +477,11 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     scores_ood = D[:,-1]
     return scores_ood
 
-def get_mean_prec(args, net, preprocess):
+def get_mean_prec(args, net, preprocess, template_dir = 'img_templates', MAX_COUNT = 1000):
     '''
     used for Mahalanobis score. Calculate class-wise mean and inverse covariance matrix
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    feat_dim = 512
-    # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
-    classwise_mean = torch.empty(args.n_cls, feat_dim)
+    classwise_mean = torch.empty(args.n_cls, args.feat_dim)
     all_features = []
     classwise_features = []
     for _ in range(args.n_cls):
@@ -492,13 +489,14 @@ def get_mean_prec(args, net, preprocess):
     train_loader = set_train_loader(args, preprocess, batch_size = 1) #bz = 1; no Shuffle
     with torch.no_grad():
         for image, label in tqdm(train_loader):
-            features = net.encode_image(image.to(device))
+            features = net.encode_image(image.to(args.device))
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
             #construct class-conditional sample matrix
             # classwise_features[label.item()] = torch.cat((classwise_features[label.item()], features.view(1, -1)), 0)
-            classwise_features[label.item()].append(features.view(1, -1))
-            all_features.append(features)
+            if len(classwise_features[label.item()]) < MAX_COUNT:
+                classwise_features[label.item()].append(features.view(1, -1))
+                all_features.append(features)
     for cls in range(args.n_cls):
         classwise_features[cls] = torch.cat(classwise_features[cls], 0)
         classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
@@ -508,10 +506,11 @@ def get_mean_prec(args, net, preprocess):
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
     print(f'cond number: {torch.linalg.cond(precision)}')
-
+    torch.save(classwise_mean, os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'))
+    torch.save(precision, os.path.join(template_dir,f'precision_{args.in_dataset}.pt'))
     return classwise_mean, precision
 
-def get_mean(args, net, preprocess, mean_dir = 'img_templates' ):
+def get_mean(args, net, preprocess, mean_dir = 'img_templates'):
     '''
     used for Maha score. calculate class-wise mean only
     '''
@@ -542,8 +541,7 @@ def get_prec(args, net, train_loader):
     '''
     used for Maha score. calculate inverse covariance matrix only
     '''
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    ftrain, _ = get_features(net, train_loader, device, normalize = args.normalize, to_np=False)
+    ftrain, _ = get_features(net, train_loader, args.device, normalize = args.normalize, to_np=False)
     cov = torch.cov(ftrain.T.double())
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
@@ -551,7 +549,7 @@ def get_prec(args, net, train_loader):
 
     return precision
 
-def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision):
+def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True):
     '''
     Compute the proposed Mahalanobis confidence score on input dataset
     '''
@@ -559,8 +557,8 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision):
     Mahalanobis = []
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(test_loader):
-            # if batch_idx >= num_batches and in_dist is False:
-            #     break       
+            if batch_idx >= len(test_loader.dataset)  // args.batch_size and in_dist is False:
+                break   
             images, labels = images.cuda(), labels.cuda()
             features = net.encode_image(images)
             if args.normalize: 

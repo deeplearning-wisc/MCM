@@ -19,10 +19,10 @@ def process_args():
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=250, type=int,
+    parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
     #encoder loading
-    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
@@ -32,17 +32,17 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting 
-    parser.add_argument('--score', default='MSP', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='Maha', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "test_official", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "clean", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=0, type=int,
+    parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     args = parser.parse_args()
 
@@ -70,7 +70,7 @@ def get_test_labels(args):
     if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
         test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
     elif args.in_dataset ==  "ImageNet":
-        test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'simple')
+        test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'clean')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
     elif args.in_dataset ==  "ImageNet100":
@@ -134,7 +134,14 @@ def main():
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
-        mean, prec = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
+        generate = True
+        template_dir = 'img_templates'
+        if generate: 
+            classwise_mean, precision = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
+        else: 
+            classwise_mean = torch.load(os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
+            precision = torch.load(os.path.join(template_dir,f'precision_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
+        in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
 
     if args.in_dataset == 'CIFAR-10':
         log.debug('\nUsing CIFAR-10 as typical data') 

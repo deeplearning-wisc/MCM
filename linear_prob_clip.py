@@ -148,7 +148,7 @@ def parse_option():
     #model setup
     parser.add_argument('--model', type=str, default='clip',
                         help='model')
-    parser.add_argument('--ckpt', type=str, default='ViT-B/16',
+    parser.add_argument('--ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
@@ -156,13 +156,13 @@ def parse_option():
     #optimization basic
     parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=2,
+    parser.add_argument('--learning_rate', type=float, default=1,
                         help='init lr')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9,
                         help='momentum')
-    parser.add_argument('--batch_size', type=int, default=512,
+    parser.add_argument('--batch_size', type=int, default=256,
                         help='batch_size')
     # if linear lr decay (default)
     parser.add_argument('--lr_decay_epochs', type=str, default='20,30,35',
