@@ -14,6 +14,7 @@ import faiss
 from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
+from nltk.corpus import wordnet as wn
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
@@ -230,17 +231,23 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             image_features = net.encode_image(images).float()
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
-                templates = openai_imagenet_template_subset[0]
+                if (args.template == 'full'):
+                    templates = openai_imagenet_template
+                elif (args.template == 'subset1'):
+                    templates = openai_imagenet_template_subset[0]
+                elif (args.template == 'subset2'):
+                    templates = openai_imagenet_template_subset[1]
 
                 # output = torch.zeros(bz,len(test_labels), device = args.device)
                 # template_weights = [0.4,0.15,0.15,0.15,0.15]
                 # template_weights = [0.2,0.2,0.2,0.2,0.2]
+                template_len = len(templates)
                 text_features_avg = torch.zeros(args.n_cls, 768, device = args.device)
-                for i, temp in enumerate(openai_imagenet_template_subset[1]):
+                for i, temp in enumerate(templates):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
                     text_features /= text_features.norm(dim=-1, keepdim=True) 
-                    text_features_avg += text_features * 1/7
+                    text_features_avg += text_features * 1/template_len
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
                 
@@ -256,6 +263,20 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 #     # output += image_features @ text_features.T * template_weights[i]
                 # zeroshot_weights = torch.stack(zeroshot_weights, dim=1).cuda()
                 # output = 100. * image_features @ zeroshot_weights
+            elif args.score == 'MIPT-wordnet':
+                template_len = len(templates)
+                text_features_avg = torch.zeros(args.n_cls, 768, device = args.device)
+                for c in test_labels:
+                    word = wn.synsets(c)[0]
+                    for i in range(0, 10):
+                        word = word.hypernyms()[0]
+                for i, temp in enumerate(templates):
+                    text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
+                    text_features = net.encode_text(text_inputs)
+                    text_features /= text_features.norm(dim=-1, keepdim=True) 
+                    text_features_avg += text_features * 1/template_len
+                text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
+                output = image_features @ text_features_avg.T 
             else:
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
