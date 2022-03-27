@@ -17,7 +17,7 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
+    parser.add_argument('--in_dataset', default='CIFAR-10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size')
@@ -36,13 +36,17 @@ def process_args():
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
-    parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
+    # for Mahalanobis score
+    parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
+    parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
+    parser.add_argument('--max_count', default = 750, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     parser.add_argument('--name', default = "clean", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     args = parser.parse_args()
 
@@ -61,7 +65,7 @@ def process_args():
     elif args.server in ['A100']:
         args.root_dir = ''
 
-    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
+    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
@@ -114,8 +118,8 @@ def main():
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, 12, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
-        test_loader = set_val_loader(args, preprocess, root=args.root_dir)
-        train_loader = set_train_loader(args, preprocess, root=args.root_dir) # used for KNN and Maha score
+        test_loader = set_val_loader(args, preprocess)
+        train_loader = set_train_loader(args, preprocess) # used for KNN and Maha score
     # ood_num_examples = len(test_loader.dataset) 
     if args.score == 'analyze':
         analysis_feature_manitude(args, net, preprocess, test_loader) 
@@ -134,13 +138,12 @@ def main():
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
-        generate = True
-        template_dir = 'img_templates'
-        if generate: 
-            classwise_mean, precision = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
+        MAX_COUNT = args.max_count
+        if args.generate: 
+            classwise_mean, precision = get_mean_prec(args, net, preprocess, MAX_COUNT) # this is faster than getting mean and var separately
         else: 
-            classwise_mean = torch.load(os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
-            precision = torch.load(os.path.join(template_dir,f'precision_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
+            classwise_mean = torch.load(os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
+            precision = torch.load(os.path.join(args.template_dir,f'precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
         in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
 
     if args.in_dataset == 'CIFAR-10':
@@ -173,8 +176,12 @@ def main():
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
+
             if args.score == 'knn':
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad)
+            elif args.score == 'Maha':
+                out_score = get_Mahalanobis_score(args, net, ood_loader, classwise_mean, precision, in_dist = False)
+
             else: # non knn scores
                 if args.model == 'CLIP':
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 

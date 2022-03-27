@@ -477,7 +477,7 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     scores_ood = D[:,-1]
     return scores_ood
 
-def get_mean_prec(args, net, preprocess, template_dir = 'img_templates', MAX_COUNT = 1000):
+def get_mean_prec(args, net, preprocess, MAX_COUNT = 1000):
     '''
     used for Mahalanobis score. Calculate class-wise mean and inverse covariance matrix
     '''
@@ -500,14 +500,16 @@ def get_mean_prec(args, net, preprocess, template_dir = 'img_templates', MAX_COU
     for cls in range(args.n_cls):
         classwise_features[cls] = torch.cat(classwise_features[cls], 0)
         classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+        if args.normalize: 
+            classwise_mean[cls] /= classwise_mean[cls].norm(dim=-1, keepdim=True)
     # now, classwise_mean is of shape [10, 512]
     all_features = torch.cat(all_features, 0)
     cov = torch.cov(all_features.T.double()) # shape: [512, 512]
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
     print(f'cond number: {torch.linalg.cond(precision)}')
-    torch.save(classwise_mean, os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'))
-    torch.save(precision, os.path.join(template_dir,f'precision_{args.in_dataset}.pt'))
+    torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
+    torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
     return classwise_mean, precision
 
 def get_mean(args, net, preprocess, mean_dir = 'img_templates'):
@@ -554,10 +556,12 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_
     Compute the proposed Mahalanobis confidence score on input dataset
     '''
     # net.eval()
-    Mahalanobis = []
+    Mahalanobis_score_all = []
+    total_len = len(test_loader.dataset)
+    tqdm_object = tqdm(test_loader, total=len(test_loader))
     with torch.no_grad():
-        for batch_idx, (images, labels) in enumerate(test_loader):
-            if batch_idx >= len(test_loader.dataset)  // args.batch_size and in_dist is False:
+        for batch_idx, (images, labels) in enumerate(tqdm_object):
+            if (batch_idx >= total_len // args.batch_size) and in_dist is False:
                 break   
             images, labels = images.cuda(), labels.cuda()
             features = net.encode_image(images)
@@ -568,13 +572,13 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_
                 zero_f = features - class_mean
                 Mahalanobis_dist = -0.5*torch.mm(torch.mm(zero_f, precision), zero_f.t()).diag()
                 if i == 0:
-                    noise_gaussian_score = Mahalanobis_dist.view(-1,1)
+                    Mahalanobis_score = Mahalanobis_dist.view(-1,1)
                 else:
-                    noise_gaussian_score = torch.cat((noise_gaussian_score, Mahalanobis_dist.view(-1,1)), 1)      
-            noise_gaussian_score, _ = torch.max(noise_gaussian_score, dim=1)
-            Mahalanobis.extend(-noise_gaussian_score.cpu().numpy())
+                    Mahalanobis_score = torch.cat((Mahalanobis_score, Mahalanobis_dist.view(-1,1)), 1)      
+            Mahalanobis_score, _ = torch.max(Mahalanobis_score, dim=1)
+            Mahalanobis_score_all.extend(-Mahalanobis_score.cpu().numpy())
         
-    return np.asarray(Mahalanobis, dtype=np.float32)
+    return np.asarray(Mahalanobis_score_all, dtype=np.float32)
 
 def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list):
     '''

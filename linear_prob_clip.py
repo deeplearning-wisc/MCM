@@ -143,26 +143,26 @@ def parse_option():
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=5, type=int,
+    parser.add_argument('--gpu', default=4, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
                         help='model')
     parser.add_argument('--ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
-    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
+    parser.add_argument('--feat_dim', type=int, default=768, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
     #optimization basic
     parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=1,
+    parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='init lr')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9,
                         help='momentum')
-    parser.add_argument('--batch_size', type=int, default=256,
+    parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
     # if linear lr decay (default)
     parser.add_argument('--lr_decay_epochs', type=str, default='20,30,35',
@@ -180,9 +180,9 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_04',
+    parser.add_argument('--unique_id', type=str, default='test_03',
                         help='id of the run')
-    parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
+    parser.add_argument("--server", type=str, default='galaxy-01', help="run on which server")
     args = parser.parse_args()
 
     args.device = f"cuda:{args.gpu}"
@@ -210,6 +210,9 @@ def parse_option():
     if args.server in ['inst-01', 'inst-04']:
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
         args.root_dir = '/nobackup/dataset_myf'
+    if args.server in ['galaxy-01']:
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
+        args.root_dir = '/nobackup-slow/dataset'
     args.log_directory = "linear_probe_logs/{in_dataset}/{unique_id}/".format(in_dataset=args.in_dataset, unique_id= args.unique_id)
     os.makedirs(args.save_dir, exist_ok=True)
     os.makedirs(args.log_directory, exist_ok=True)
@@ -229,8 +232,8 @@ def linear_probe_pytorch():
 
     log = set_up_logger(args)
     preprocess, featurizer, classifier = set_model(args)
-    val_loader = set_val_loader(args, preprocess, root=args.root_dir)
-    train_loader = set_train_loader(args, preprocess, root=args.root_dir)
+    val_loader = set_val_loader(args, preprocess)
+    train_loader = set_train_loader(args, preprocess)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = set_optimizer(args, classifier)
 
@@ -266,8 +269,8 @@ def linear_probe_sklearn():
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
     preprocess, model, classifier = set_model(args)
-    val_loader = set_val_loader(args, preprocess, root=args.root_dir)
-    train_loader = set_train_loader(args, preprocess, root=args.root_dir)
+    val_loader = set_val_loader(args, preprocess)
+    train_loader = set_train_loader(args, preprocess)
     from sklearn.linear_model import LogisticRegression
 
     train_features, train_labels = get_features(args, model, train_loader, to_np = True)
