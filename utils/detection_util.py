@@ -209,6 +209,68 @@ def get_ood_scores(args, net, loader, in_dist=False):
     else:
         return concat(_score)[:len(loader.dataset)].copy()
 
+
+def input_preprocessing(args, net, images, labels, text_features):
+    criterion = torch.nn.CrossEntropyLoss()
+    image_features = net.encode_image(images).float()
+    image_features = image_features/ image_features.norm(dim=-1, keepdim=True) 
+    outputs = image_features @ text_features.T / args.T
+    pseudo_labels = torch.argmax(outputs.detach(), dim=1)
+    loss = criterion(outputs, pseudo_labels) # loss is NEGATIVE log likelihood
+    loss.backward()
+
+    sign_grad =  torch.ge(images.grad.data, 0) # sign of grad 0 (False) or 1 (True)
+    sign_grad = (sign_grad.float() - 0.5) * 2  # convert to -1 or 1
+
+    std=(0.26862954, 0.26130258, 0.27577711) # for CLIP model
+    for i in range(3):
+        sign_grad[:,i] = sign_grad[:,i]/std[i]
+
+    processed_inputs = images.data  - args.noiseMagnitude * sign_grad # because of nll, here sign_grad is actually: -sign of gradient
+    return processed_inputs
+
+def get_ood_scores_clip_odin(args, net, loader, test_labels, in_dist=False):
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    _right_score = []
+    _wrong_score = []
+
+    with torch.no_grad():
+        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+        text_features = net.encode_text(text_inputs).float()
+        text_features /= text_features.norm(dim=-1, keepdim=True) 
+
+    tqdm_object = tqdm(loader, total=len(loader))
+    for batch_idx, (images, labels) in enumerate(tqdm_object):
+        if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
+            break
+        # bz = images.size(0)
+        labels = labels.long().cuda()
+        images = images.cuda()
+
+        images.requires_grad = True
+        images = input_preprocessing(args, net, images, labels, text_features)
+
+        with torch.no_grad():
+            image_features = net.encode_image(images).float()
+            image_features /= image_features.norm(dim=-1, keepdim=True) 
+            output = image_features @ text_features.T
+            smax = to_np(F.softmax(output/ args.T, dim=1))
+            _score.append(-np.max(smax, axis=1)) 
+            if in_dist:
+                preds = np.argmax(smax, axis=1)
+                targets = labels.cpu().numpy().squeeze()
+                right_indices = preds == targets
+                wrong_indices = np.invert(right_indices)
+
+                _right_score.append(-np.max(smax[right_indices], axis=1))
+                _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+    if in_dist:
+        return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
+    else:
+        return concat(_score)[:len(loader.dataset)].copy()   
+
 def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     '''
     used for scores based on img-caption product inner products: MIP, entropy, energy score. 
@@ -277,7 +339,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                     text_features_avg += text_features * 1/template_len
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
-            else:
+            else: # for MIP
+
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
