@@ -220,6 +220,15 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     _wrong_score = []
     multi_template= args.score == 'MIPT'
 
+    wordnet_labels = []
+    if args.score == 'MIPT-wordnet':
+        for c in test_labels:
+            word = wn.synsets(c)[0]
+            wordnet_labels.append([c])
+            for i in range(0, 9):
+                word = word.hypernyms()[0]
+                wordnet_labels[i].append()
+
     tqdm_object = tqdm(loader, total=len(loader))
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(tqdm_object):
@@ -266,10 +275,6 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             elif args.score == 'MIPT-wordnet':
                 template_len = len(templates)
                 text_features_avg = torch.zeros(args.n_cls, 768, device = args.device)
-                for c in test_labels:
-                    word = wn.synsets(c)[0]
-                    for i in range(0, 10):
-                        word = word.hypernyms()[0]
                 for i, temp in enumerate(templates):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)
