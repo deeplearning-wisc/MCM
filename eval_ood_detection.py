@@ -32,7 +32,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting 
-    parser.add_argument('--score', default='Maha', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze')
+    parser.add_argument('--score', default='Maha', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze|MIPT-wordnet')
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
@@ -48,6 +48,7 @@ def process_args():
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
+    parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
 
     if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
