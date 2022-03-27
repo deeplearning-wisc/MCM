@@ -17,9 +17,9 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='CIFAR-10', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
+    parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
@@ -38,15 +38,15 @@ def process_args():
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     # for Mahalanobis score
     parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
-    parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
-    parser.add_argument('--max_count', default = 750, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
+    parser.add_argument('--max_count', default = 800, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     parser.add_argument('--name', default = "clean", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = "inst-01", type =str, 
+    parser.add_argument('--server', default = "galaxy-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=7, type=int,
+    parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
