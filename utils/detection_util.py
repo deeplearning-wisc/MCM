@@ -33,7 +33,7 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
     elif out_dataset == 'dtd':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
                                     transform=preprocess)
-    elif out_dataset == 'places365':
+    elif out_dataset == 'places365': # original places dataset, much larger size than 10,000
         # root_tmp= "/nobackup-slow/dataset/places365_test/test_subset" #galaxy
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'places365'),
             transform=preprocess)
@@ -59,7 +59,7 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'iNaturalist'), transform=preprocess)
     elif out_dataset == 'SUN':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'SUN'), transform=preprocess)
-    elif out_dataset == 'places365':
+    elif out_dataset == 'places365': # filtered places
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
         if args.server == 'galaxy-01':

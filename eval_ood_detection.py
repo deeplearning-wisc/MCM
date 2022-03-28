@@ -17,9 +17,9 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=50, type=int,
+    parser.add_argument('-b', '--batch-size', default=75, type=int,
                             help='mini-batch size')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
@@ -37,18 +37,18 @@ def process_args():
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
     # for Mahalanobis score
     parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
-    parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--max_count', default = 800, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 1, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 100, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.002, type =float, help = "noise maganitute for inputs") 
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     parser.add_argument('--name', default = "clean", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=3, type=int,
                         help='the GPU indice to use')
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
@@ -129,12 +129,12 @@ def main():
         return 
 
     if args.score in ['MIP', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin']:
-        if args.model == 'CLIP':
+        if args.score == 'odin':
+            in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
+        elif args.model == 'CLIP':
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP-Linear':
             in_score, right_score, wrong_score= get_ood_scores_clip_linear(args, net, classifier, test_loader, in_dist=True)       
-        elif args.score == 'odin':
-            in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         num_right = len(right_score)
         num_wrong = len(wrong_score)
         log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
