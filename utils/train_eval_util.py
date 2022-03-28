@@ -13,7 +13,7 @@ from continuum.datasets import ImageNet100
 
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
-def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False):
+def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False, subset = False):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
@@ -45,8 +45,17 @@ def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False
             path = os.path.join('/nobackup','ImageNet','train')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012', 'train')
-        train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(path, transform=preprocess),
+        dataset = datasets.ImageFolder(path, transform=preprocess)
+        if subset: 
+            from collections import defaultdict
+            classwise_count = defaultdict(int)
+            indices = []
+            for i, label in enumerate(dataset.targets): 
+                if classwise_count[label] < args.max_count:
+                    indices.append(i)
+                    classwise_count[label] += 1
+            dataset = torch.utils.data.Subset(dataset, indices)            
+        train_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet10":
         train_loader = torch.utils.data.DataLoader(

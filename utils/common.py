@@ -78,8 +78,9 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
 
 def get_features(args, model, dataloader, to_np = True):
     '''
-    extract all image features from the dataset
+    extract image features from the dataset
     '''
+    from collections import Counter
     all_features = []
     all_labels = []
     with torch.no_grad():

@@ -210,11 +210,14 @@ def get_ood_scores(args, net, loader, in_dist=False):
         return concat(_score)[:len(loader.dataset)].copy()
 
 
-def input_preprocessing(args, net, images, labels, text_features):
+def input_preprocessing(args, net, images, text_features = None, classifier = None):
     criterion = torch.nn.CrossEntropyLoss()
     image_features = net.encode_image(images).float()
-    image_features = image_features/ image_features.norm(dim=-1, keepdim=True) 
-    outputs = image_features @ text_features.T / args.T
+    if classifier:
+        outputs = classifier(image_features) / args.T
+    else: 
+        image_features = image_features/ image_features.norm(dim=-1, keepdim=True) 
+        outputs = image_features @ text_features.T / args.T
     pseudo_labels = torch.argmax(outputs.detach(), dim=1)
     loss = criterion(outputs, pseudo_labels) # loss is NEGATIVE log likelihood
     loss.backward()
@@ -229,17 +232,18 @@ def input_preprocessing(args, net, images, labels, text_features):
     processed_inputs = images.data  - args.noiseMagnitude * sign_grad # because of nll, here sign_grad is actually: -sign of gradient
     return processed_inputs
 
-def get_ood_scores_clip_odin(args, net, loader, test_labels, in_dist=False):
+def get_ood_scores_clip_odin(args, net, loader, test_labels, classifier = None, in_dist=False):
     to_np = lambda x: x.data.cpu().numpy()
     concat = lambda x: np.concatenate(x, axis=0)
     _score = []
     _right_score = []
     _wrong_score = []
-
-    with torch.no_grad():
-        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
-        text_features = net.encode_text(text_inputs).float()
-        text_features /= text_features.norm(dim=-1, keepdim=True) 
+    text_features = None
+    if classifier is None:
+        with torch.no_grad():
+            text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+            text_features = net.encode_text(text_inputs).float()
+            text_features /= text_features.norm(dim=-1, keepdim=True) 
 
     tqdm_object = tqdm(loader, total=len(loader))
     for batch_idx, (images, labels) in enumerate(tqdm_object):
@@ -250,12 +254,18 @@ def get_ood_scores_clip_odin(args, net, loader, test_labels, in_dist=False):
         images = images.cuda()
 
         images.requires_grad = True
-        images = input_preprocessing(args, net, images, labels, text_features)
+        images = input_preprocessing(args, net, images, text_features, classifier)
 
         with torch.no_grad():
             image_features = net.encode_image(images).float()
-            image_features /= image_features.norm(dim=-1, keepdim=True) 
-            output = image_features @ text_features.T
+            if classifier: 
+                if args.normalize: 
+                    image_features /= image_features.norm(dim=-1, keepdim=True)  
+                output = classifier(image_features)
+                
+            else: 
+                image_features /= image_features.norm(dim=-1, keepdim=True) 
+                output = image_features @ text_features.T
             smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1)) 
             if in_dist:
