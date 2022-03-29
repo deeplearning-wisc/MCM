@@ -33,7 +33,7 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
     elif out_dataset == 'dtd':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
                                     transform=preprocess)
-    elif out_dataset == 'places365':
+    elif out_dataset == 'places365': # original places dataset, much larger size than 10,000
         # root_tmp= "/nobackup-slow/dataset/places365_test/test_subset" #galaxy
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'places365'),
             transform=preprocess)
@@ -59,7 +59,7 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'iNaturalist'), transform=preprocess)
     elif out_dataset == 'SUN':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'SUN'), transform=preprocess)
-    elif out_dataset == 'places365':
+    elif out_dataset == 'places365': # filtered places
         testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
     elif out_dataset == 'dtd':
         if args.server == 'galaxy-01':
@@ -209,6 +209,78 @@ def get_ood_scores(args, net, loader, in_dist=False):
     else:
         return concat(_score)[:len(loader.dataset)].copy()
 
+
+def input_preprocessing(args, net, images, text_features = None, classifier = None):
+    criterion = torch.nn.CrossEntropyLoss()
+    image_features = net.encode_image(images).float()
+    if classifier:
+        outputs = classifier(image_features) / args.T
+    else: 
+        image_features = image_features/ image_features.norm(dim=-1, keepdim=True) 
+        outputs = image_features @ text_features.T / args.T
+    pseudo_labels = torch.argmax(outputs.detach(), dim=1)
+    loss = criterion(outputs, pseudo_labels) # loss is NEGATIVE log likelihood
+    loss.backward()
+
+    sign_grad =  torch.ge(images.grad.data, 0) # sign of grad 0 (False) or 1 (True)
+    sign_grad = (sign_grad.float() - 0.5) * 2  # convert to -1 or 1
+
+    std=(0.26862954, 0.26130258, 0.27577711) # for CLIP model
+    for i in range(3):
+        sign_grad[:,i] = sign_grad[:,i]/std[i]
+
+    processed_inputs = images.data  - args.noiseMagnitude * sign_grad # because of nll, here sign_grad is actually: -sign of gradient
+    return processed_inputs
+
+def get_ood_scores_clip_odin(args, net, loader, test_labels, classifier = None, in_dist=False):
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    _right_score = []
+    _wrong_score = []
+    text_features = None
+    if classifier is None:
+        with torch.no_grad():
+            text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+            text_features = net.encode_text(text_inputs).float()
+            text_features /= text_features.norm(dim=-1, keepdim=True) 
+
+    tqdm_object = tqdm(loader, total=len(loader))
+    for batch_idx, (images, labels) in enumerate(tqdm_object):
+        if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
+            break
+        # bz = images.size(0)
+        labels = labels.long().cuda()
+        images = images.cuda()
+
+        images.requires_grad = True
+        images = input_preprocessing(args, net, images, text_features, classifier)
+
+        with torch.no_grad():
+            image_features = net.encode_image(images).float()
+            if classifier: 
+                if args.normalize: 
+                    image_features /= image_features.norm(dim=-1, keepdim=True)  
+                output = classifier(image_features)
+                
+            else: 
+                image_features /= image_features.norm(dim=-1, keepdim=True) 
+                output = image_features @ text_features.T
+            smax = to_np(F.softmax(output/ args.T, dim=1))
+            _score.append(-np.max(smax, axis=1)) 
+            if in_dist:
+                preds = np.argmax(smax, axis=1)
+                targets = labels.cpu().numpy().squeeze()
+                right_indices = preds == targets
+                wrong_indices = np.invert(right_indices)
+
+                _right_score.append(-np.max(smax[right_indices], axis=1))
+                _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+    if in_dist:
+        return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
+    else:
+        return concat(_score)[:len(loader.dataset)].copy()   
+
 def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
     '''
     used for scores based on img-caption product inner products: MIP, entropy, energy score. 
@@ -282,7 +354,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                     text_features_avg += text_features * 1/template_len
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
-            else:
+            else: # for MIP
+
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
@@ -503,7 +576,7 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
     scores_ood = D[:,-1]
     return scores_ood
 
-def get_mean_prec(args, net, preprocess, template_dir = 'img_templates', MAX_COUNT = 1000):
+def get_mean_prec(args, net, preprocess, MAX_COUNT = 1000):
     '''
     used for Mahalanobis score. Calculate class-wise mean and inverse covariance matrix
     '''
@@ -526,14 +599,16 @@ def get_mean_prec(args, net, preprocess, template_dir = 'img_templates', MAX_COU
     for cls in range(args.n_cls):
         classwise_features[cls] = torch.cat(classwise_features[cls], 0)
         classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+        if args.normalize: 
+            classwise_mean[cls] /= classwise_mean[cls].norm(dim=-1, keepdim=True)
     # now, classwise_mean is of shape [10, 512]
     all_features = torch.cat(all_features, 0)
     cov = torch.cov(all_features.T.double()) # shape: [512, 512]
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
     print(f'cond number: {torch.linalg.cond(precision)}')
-    torch.save(classwise_mean, os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'))
-    torch.save(precision, os.path.join(template_dir,f'precision_{args.in_dataset}.pt'))
+    torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
+    torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
     return classwise_mean, precision
 
 def get_mean(args, net, preprocess, mean_dir = 'img_templates'):
@@ -580,10 +655,12 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_
     Compute the proposed Mahalanobis confidence score on input dataset
     '''
     # net.eval()
-    Mahalanobis = []
+    Mahalanobis_score_all = []
+    total_len = len(test_loader.dataset)
+    tqdm_object = tqdm(test_loader, total=len(test_loader))
     with torch.no_grad():
-        for batch_idx, (images, labels) in enumerate(test_loader):
-            if batch_idx >= len(test_loader.dataset)  // args.batch_size and in_dist is False:
+        for batch_idx, (images, labels) in enumerate(tqdm_object):
+            if (batch_idx >= total_len // args.batch_size) and in_dist is False:
                 break   
             images, labels = images.cuda(), labels.cuda()
             features = net.encode_image(images)
@@ -594,13 +671,13 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_
                 zero_f = features - class_mean
                 Mahalanobis_dist = -0.5*torch.mm(torch.mm(zero_f, precision), zero_f.t()).diag()
                 if i == 0:
-                    noise_gaussian_score = Mahalanobis_dist.view(-1,1)
+                    Mahalanobis_score = Mahalanobis_dist.view(-1,1)
                 else:
-                    noise_gaussian_score = torch.cat((noise_gaussian_score, Mahalanobis_dist.view(-1,1)), 1)      
-            noise_gaussian_score, _ = torch.max(noise_gaussian_score, dim=1)
-            Mahalanobis.extend(-noise_gaussian_score.cpu().numpy())
+                    Mahalanobis_score = torch.cat((Mahalanobis_score, Mahalanobis_dist.view(-1,1)), 1)      
+            Mahalanobis_score, _ = torch.max(Mahalanobis_score, dim=1)
+            Mahalanobis_score_all.extend(-Mahalanobis_score.cpu().numpy())
         
-    return np.asarray(Mahalanobis, dtype=np.float32)
+    return np.asarray(Mahalanobis_score_all, dtype=np.float32)
 
 def get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list):
     '''

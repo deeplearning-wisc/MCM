@@ -19,10 +19,10 @@ def process_args():
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
-                            help='mini-batch size')
+    parser.add_argument('-b', '--batch-size', default=75, type=int,
+                            help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
@@ -31,18 +31,29 @@ def process_args():
     parser.add_argument('--classifier_ckpt', default ="ImageNet_ViT-B-16_lr_0.5_decay_0_bsz_512_test_02_warm", type=str,
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
-    #detection setting 
-    parser.add_argument('--score', default='Maha', type=str, help='score options: Maha|MIP|MSP|energy|knn|MIPCT|MIPCI|retrival|MIPT|analyze|MIPT-wordnet')
-    parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
-    parser.add_argument('--T', default = 1, type =float, help = "temperature for energy score")    
+    #detection setting  
+    parser.add_argument('--score', default='odin_logits', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+                                                                                'energy', 'entropy', 'odin', # img->text encoder; feature space
+                                                                                'MIP', 'MIPT','MIPT-wordnet', # img->text encoder; feature space
+                                                                                'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
+                                                                                'MIPCT', 'MIPCI', 'retrival' # text->img encoder; feature space
+                                                                                ], help='score options')
+    parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')   
     parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
-    parser.add_argument('--normalize', action='store_true', help='whether use normalized features for Maha score')
+    # for Mahalanobis score
+    parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
+    parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
+    parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
+    # for ODIN score 
+    parser.add_argument('--T', default = 100, type =float, help = "temperature") 
+    parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "clean", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "te", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
@@ -62,9 +73,7 @@ def process_args():
     elif args.server in ['A100']:
         args.root_dir = ''
 
-    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
-    if args.score == 'MIPT':
-        args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.template}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
+    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
@@ -117,18 +126,22 @@ def main():
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, 12, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
-        test_loader = set_val_loader(args, preprocess, root=args.root_dir)
-        train_loader = set_train_loader(args, preprocess, root=args.root_dir) # used for KNN and Maha score
-    # ood_num_examples = len(test_loader.dataset) 
-    if args.score == 'analyze':
+        test_loader = set_val_loader(args, preprocess)
+        train_loader = set_train_loader(args, preprocess, subset = True) # used for KNN and Maha score
+    if args.score == 'analyze': # analyze the unnormalized feature magnitude; for debug and analysis only
         analysis_feature_manitude(args, net, preprocess, test_loader) 
         return 
 
-    if args.score in ['MIP', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits']:
-        if args.model == 'CLIP':
+    if args.score in ['MIP', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
+        if args.score == 'odin': # featue space ODIN 
+            in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
+        elif args.model == 'CLIP': # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model == 'CLIP-Linear':
-            in_score, right_score, wrong_score= get_ood_scores_clip_linear(args, net, classifier, test_loader, in_dist=True)       
+        elif args.model == 'CLIP-Linear': # after linear probe; img encoder -> logit space
+            if args.score == 'odin_logits':
+                in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, classifier, in_dist=True)
+            else: # energy_logits and MSP
+                in_score, right_score, wrong_score= get_ood_scores_clip_linear(args, net, classifier, test_loader, in_dist=True)       
         num_right = len(right_score)
         num_wrong = len(wrong_score)
         log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
@@ -137,13 +150,12 @@ def main():
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
-        generate = True
-        template_dir = 'img_templates'
-        if generate: 
-            classwise_mean, precision = get_mean_prec(args, net, preprocess) # this is faster than getting mean and var separately
+        MAX_COUNT = args.max_count
+        if args.generate: 
+            classwise_mean, precision = get_mean_prec(args, net, preprocess, MAX_COUNT) # this is faster than getting mean and var separately
         else: 
-            classwise_mean = torch.load(os.path.join(template_dir,f'classwise_mean_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
-            precision = torch.load(os.path.join(template_dir,f'precision_{args.in_dataset}.pt'), map_location= 'cpu').cuda()
+            classwise_mean = torch.load(os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
+            precision = torch.load(os.path.join(args.template_dir,f'precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
         in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
 
     if args.in_dataset == 'CIFAR-10':
@@ -176,13 +188,21 @@ def main():
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
+
             if args.score == 'knn':
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad)
+            elif args.score == 'Maha':
+                out_score = get_Mahalanobis_score(args, net, ood_loader, classwise_mean, precision, in_dist = False)
+            elif args.score == 'odin':
+                 out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, in_dist=False)
             else: # non knn scores
                 if args.model == 'CLIP':
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 elif args.model == 'CLIP-Linear':
-                    out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
+                    if args.score == 'odin_logits':
+                        out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, classifier)
+                    else: 
+                        out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
         plot_distribution(args, in_score, out_score, out_dataset)

@@ -13,11 +13,12 @@ from continuum.datasets import ImageNet100
 
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
-def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', batch_size = None, shuffle = False):
+def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False, subset = False):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
+    root = args.root_dir
     if preprocess == None:
         normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
                                         std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
@@ -44,9 +45,18 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
             path = os.path.join('/nobackup','ImageNet','train')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012', 'train')
-        train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(path, transform=preprocess),
-                batch_size=args.batch_size, shuffle=shuffle, **kwargs)
+        dataset = datasets.ImageFolder(path, transform=preprocess)
+        if subset: 
+            from collections import defaultdict
+            classwise_count = defaultdict(int)
+            indices = []
+            for i, label in enumerate(dataset.targets): 
+                if classwise_count[label] < args.max_count:
+                    indices.append(i)
+                    classwise_count[label] += 1
+            dataset = torch.utils.data.Subset(dataset, indices)            
+        train_loader = torch.utils.data.DataLoader(dataset,
+                batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet10":
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
@@ -58,11 +68,12 @@ def set_train_loader(args, preprocess = None, root = '/nobackup/dataset_myf', ba
 
     return train_loader
 
-def set_val_loader(args, preprocess = None, root = '/nobackup/dataset_myf'):
+def set_val_loader(args, preprocess = None):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
+    root = args.root_dir
     if preprocess == None:
         normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
                                         std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
