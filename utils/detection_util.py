@@ -622,13 +622,8 @@ def get_mean_prec(args, net, preprocess):
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
     print(f'cond number: {torch.linalg.cond(precision)}')
-<<<<<<< HEAD
-    torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
-    torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
-=======
     torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'))
     torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'))
->>>>>>> master
     return classwise_mean, precision
 
 def get_mean(args, net, preprocess, mean_dir = 'img_templates'):
