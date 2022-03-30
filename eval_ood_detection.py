@@ -172,7 +172,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet500']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
