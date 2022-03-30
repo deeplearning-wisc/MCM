@@ -48,12 +48,9 @@ def obtain_ImageNet10_classes(loc = None):
     class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
     return class_dict.keys()
 
-def obtain_ImageNet100_classes(loc):
+def obtain_ImageNet_subset_classes(loc):
     # sort by values
-    class_set = set()
-    with open('data/ImageNet100/class_list.txt') as file:
-        for line in file.readlines():
-            class_set.add(line.strip())
+    class_set = os.listdir(os.path.join(loc, 'train'))
 
     class_name_set = []
     with open('data/ImageNet/imagenet_class_index.json') as file: 
