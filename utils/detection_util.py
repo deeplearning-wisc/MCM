@@ -555,8 +555,14 @@ def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader
     '''
     used for KNN score for ID dataset  
     '''
-    ftrain, _ = get_features(args, net, train_loader)
-    ftest,_ = get_features(args, net, test_loader)
+    if args.generate: 
+        ftrain, _ = get_features(args, net, train_loader, dataset = 'ID_train')
+        ftest,_ = get_features(args, net, test_loader, dataset = 'ID_test')
+    else:
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_ID_train_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            ftrain =np.load(f)
+        with open(os.path.join(args.template_dir,'all_feat', f'all_feat_ID_test_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            ftest =np.load(f)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
@@ -566,49 +572,58 @@ def get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader
     scores = D[:,-1]
     return scores, index_bad
 
-def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, index_bad):
+def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, out_dataset, index_bad):
     '''
     used for KNN score for OOD dataset
     '''
-    food, _ = get_features(args, net, ood_loader)
+    if args.generate: 
+        food, _ = get_features(args, net, ood_loader, dataset = out_dataset) 
+    else: 
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{out_dataset}_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            food =np.load(f)
     food = food.astype('float32')
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]
     return scores_ood
 
-def get_mean_prec(args, net, preprocess, MAX_COUNT = 1000):
+def get_mean_prec(args, net, preprocess):
     '''
     used for Mahalanobis score. Calculate class-wise mean and inverse covariance matrix
     '''
-    classwise_mean = torch.empty(args.n_cls, args.feat_dim)
+    classwise_mean = torch.empty(args.n_cls, args.feat_dim, device = args.device)
     all_features = []
-    classwise_features = []
-    for _ in range(args.n_cls):
-       classwise_features.append([]) 
-    train_loader = set_train_loader(args, preprocess, batch_size = 1) #bz = 1; no Shuffle
+    # classwise_features = []
+    from collections import defaultdict
+    classwise_idx = defaultdict(list)
+    # for _ in range(args.n_cls):
+    #    classwise_features.append([]) 
+    train_loader = set_train_loader(args, preprocess, batch_size = args.batch_size, shuffle = False, subset = args.subset) #no Shuffle
     with torch.no_grad():
-        for image, label in tqdm(train_loader):
+        for idx, (image, labels) in enumerate(tqdm(train_loader)):
             features = net.encode_image(image.to(args.device))
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
-            #construct class-conditional sample matrix
+            # construct class-conditional sample matrix
             # classwise_features[label.item()] = torch.cat((classwise_features[label.item()], features.view(1, -1)), 0)
-            if len(classwise_features[label.item()]) < MAX_COUNT:
-                classwise_features[label.item()].append(features.view(1, -1))
-                all_features.append(features)
+            #if len(classwise_features[label.item()]) < MAX_COUNT:
+            # classwise_features[label.item()].append(features.view(1, -1))
+            for label in labels:
+                classwise_idx[label.item()].append(idx)
+            all_features.append(features)
+    all_features = torch.cat(all_features)
     for cls in range(args.n_cls):
-        classwise_features[cls] = torch.cat(classwise_features[cls], 0)
-        classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+        # classwise_features[cls] = torch.cat(classwise_features[cls], 0)
+        # classwise_mean[cls] = torch.mean(classwise_features[cls].float(), dim = 0)
+        classwise_mean[cls] = torch.mean(all_features[classwise_idx[cls]].float(), dim = 0)
         if args.normalize: 
             classwise_mean[cls] /= classwise_mean[cls].norm(dim=-1, keepdim=True)
     # now, classwise_mean is of shape [10, 512]
-    all_features = torch.cat(all_features, 0)
     cov = torch.cov(all_features.T.double()) # shape: [512, 512]
     # cov = cov + 1e-7*torch.eye(all_features.shape[1]).cuda()
     precision = torch.linalg.inv(cov).float()
     print(f'cond number: {torch.linalg.cond(precision)}')
-    torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
-    torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{MAX_COUNT}_{args.normalize}.pt'))
+    torch.save(classwise_mean, os.path.join(args.template_dir,f'classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'))
+    torch.save(precision, os.path.join(args.template_dir,f'precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'))
     return classwise_mean, precision
 
 def get_mean(args, net, preprocess, mean_dir = 'img_templates'):

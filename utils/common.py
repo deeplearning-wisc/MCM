@@ -73,7 +73,11 @@ def get_image_dataloader(image_dataset_name, preprocess, train = False):
     dataloader = DataLoader(image_dataset, batch_size=200, shuffle=train, drop_last=True, num_workers=4)
     return dataloader
 
+<<<<<<< HEAD
 def get_features(args, model, dataloader, to_np = True):
+=======
+def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
+>>>>>>> master
     '''
     extract image features from the dataset
     '''
@@ -88,7 +92,17 @@ def get_features(args, model, dataloader, to_np = True):
             all_features.append(features)
             all_labels.append(labels)
     if to_np:
+<<<<<<< HEAD
         return torch.cat(all_features).cpu().numpy(), torch.cat(all_labels).cpu().numpy()
+=======
+        all_features = torch.cat(all_features).cpu().numpy()
+        all_labels = torch.cat(all_labels).cpu().numpy()
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{dataset}_{args.max_count}_{args.normalize}.npy'), 'wb') as f:
+            np.save(f, all_features)
+            np.save(f, all_labels)
+
+        return all_features, all_labels
+>>>>>>> master
     else: 
         return torch.cat(all_features), torch.cat(all_labels)
 
