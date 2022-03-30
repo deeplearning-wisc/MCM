@@ -9,6 +9,11 @@ __pycache__/
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 
+# results file
+*.png
+*.pdf
+*.npy
+
 # Environments
 .env
 .venv
@@ -18,6 +23,8 @@ ENV/
 env.bak/
 venv.bak/
 
+img_templates/
+img_templates/all_feat/
 #results
 datasets/
 results/
