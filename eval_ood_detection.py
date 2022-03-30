@@ -17,7 +17,7 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
     parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
@@ -32,7 +32,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting  
-    parser.add_argument('--score', default='Maha', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
@@ -53,7 +53,7 @@ def process_args():
     parser.add_argument('--name', default = "te", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = "inst-01", type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=2, type=int,
+    parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])

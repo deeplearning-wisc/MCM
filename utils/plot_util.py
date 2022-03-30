@@ -13,14 +13,15 @@ def plot_distribution(args, id_scores, ood_scores, out_dataset):
     # plt.xlim(-10, 50)
     plt.savefig(os.path.join(args.log_directory,f"{args.score}_{out_dataset}.png"), bbox_inches='tight')
 
-def plot_umap_id_only(name = 'all_feat_ID_train_500_True', template_dir = 'img_templates'):
+def plot_umap_id_only(name = 'all_feat_ID_test_500_True', template_dir = 'img_templates', subset = False):
     with open(os.path.join(template_dir, 'all_feat', f'{name}.npy'), 'rb') as f:
         feat =np.load(f)
         labels = np.load(f)
-    size = 50000
-    idx = np.random.choice(range(len(feat)), size = size, replace = False)
-    feat = feat[idx]
-    labels = labels[idx]
+    if subset:
+        size = 50000
+        idx = np.random.choice(range(len(feat)), size = size, replace = False)
+        feat = feat[idx]
+        labels = labels[idx]
     n_neighbors = 20
     reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
     name +=f'n_neighbor_{n_neighbors}'
@@ -41,13 +42,17 @@ def plot_umap_id_only(name = 'all_feat_ID_train_500_True', template_dir = 'img_t
     plt.tight_layout()
     plt.savefig(f'{name}_umap_train_subsample.pdf')
 
-def plot_umap_id_ood(id = 'all_feat_ID_test_500_True', ood = 'all_feat_iNaturalist_500_True', ood_name = "iNaturalist", template_dir = 'img_templates'):
+def plot_umap_id_ood(id = 'all_feat_ID_test_500_True', ood_name = "ID_train", template_dir = 'img_templates'):
     ood = f'all_feat_{ood_name}_500_True'
     label_to_class_idx = {0: ood_name, 1: "ID"}
     with open(os.path.join(template_dir, 'all_feat', f'{id}.npy'), 'rb') as f:
         id_feat =np.load(f)
     with open(os.path.join(template_dir, 'all_feat', f'{ood}.npy'), 'rb') as f:
         ood_feat =np.load(f)
+        if len(ood_feat) > len(id_feat): # subsample
+            size = len(id_feat)
+            idx = np.random.choice(range(len(ood_feat)), size = size, replace = False)
+            ood_feat = ood_feat[idx]
     labels = np.zeros(len(id_feat) + len(ood_feat))
     labels[:len(id_feat)] = 1
     feat = np.concatenate((id_feat, ood_feat))
@@ -79,4 +84,5 @@ if __name__ == '__main__':
     ood_names = ['dtd','places365', 'SUN']
     # for ood_name in ood_names:
     #     plot_umap_id_ood(ood_name = ood_name)
-    plot_umap_id_only()
+    #plot_umap_id_only()
+    plot_umap_id_ood()
