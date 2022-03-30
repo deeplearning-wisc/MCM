@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+#Mac
+.DS_Store
+
+#plots
+*.pdf
+*.png
+*.npy
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+img_templates/
+img_templates/all_feat/
+#results
+datasets/
+results/
+linear_probe_logs/
+train_results/
+data/CIFAR*
