@@ -291,7 +291,10 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     _right_score = []
     _wrong_score = []
     multi_template= args.score == 'MIPT'
-
+    #debug
+    # fingerprints = []
+    # labels_all = []
+    #end
     wordnet_labels = []
     if args.score == 'MIPT-wordnet':
         for c in test_labels:
@@ -359,9 +362,11 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
-            # similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)D
                 output = image_features @ text_features.T
-
+                #debug 
+                # fingerprints.append(to_np(output))
+                # labels_all.append(to_np(labels))
+                #end
             # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
             if softmax:
                 smax = to_np(F.softmax(output/ args.T, dim=1))
@@ -386,7 +391,15 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
 
                 _right_score.append(-np.max(smax[right_indices], axis=1))
                 _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
-
+    #debug 
+    # if in_dist:
+    #     name = 'img_templates/fingerprint.npy'
+    # else:
+    #     name = 'img_templates/fingerprint_ood.npy'
+    # with open(name, 'wb') as f:
+    #     np.save(f, concat(fingerprints))
+    #     np.save(f, concat(labels_all))
+    #end
     if in_dist:
         return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
     else:
