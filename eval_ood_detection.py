@@ -6,7 +6,7 @@ import clip
 from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_cifar_classes, setup_seed
+from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -18,8 +18,8 @@ def process_args():
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
-                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100'], help='in-distribution dataset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
+                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet500'], help='in-distribution dataset')
+    parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
@@ -65,6 +65,8 @@ def process_args():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
+    elif args.in_dataset == 'ImageNet500':
+        args.n_cls = 500
     
     if args.server in ['inst-01', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf' #save dir of dataset
@@ -86,8 +88,10 @@ def get_test_labels(args):
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'clean')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
-    elif args.in_dataset ==  "ImageNet100":
-        test_labels = obtain_ImageNet100_classes(loc = os.path.join(os.path.join(args.root_dir,'ImageNet100')))
+    elif args.in_dataset == "ImageNet100":
+        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join(args.root_dir,'ImageNet100'))
+    elif args.in_dataset == "ImageNet500":
+        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join(args.root_dir,'ImageNet500'))
     return test_labels
 
 
@@ -168,7 +172,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet500']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')

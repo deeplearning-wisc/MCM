@@ -326,7 +326,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 # template_weights = [0.4,0.15,0.15,0.15,0.15]
                 # template_weights = [0.2,0.2,0.2,0.2,0.2]
                 template_len = len(templates)
-                text_features_avg = torch.zeros(args.n_cls, 512, device = args.device)
+                text_features_avg = torch.zeros(args.n_cls, args.feat_dim, device = args.device)
                 for i, temp in enumerate(templates):
                     text_inputs = torch.cat([clip.tokenize(temp(c)) for c in test_labels]).cuda()
                     text_features = net.encode_text(text_inputs)

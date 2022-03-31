@@ -65,6 +65,10 @@ def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False
         train_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'train'), transform=preprocess),
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif args.in_dataset == "ImageNet500":
+        train_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(root, 'ImageNet500', 'train'), transform=preprocess),
+                batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     return train_loader
 
@@ -106,6 +110,10 @@ def set_val_loader(args, preprocess = None):
     elif args.in_dataset == "ImageNet100":
         val_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'val'), transform=preprocess),
+                batch_size=args.batch_size, shuffle=False, **kwargs)
+    elif args.in_dataset == "ImageNet500":
+        val_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(root, 'ImageNet500', 'val'), transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     return val_loader
 
