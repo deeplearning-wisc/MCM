@@ -18,7 +18,8 @@ def process_args():
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
-                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet500'], help='in-distribution dataset')
+                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset'], help='in-distribution dataset')
+    parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
     parser.add_argument('-b', '--batch-size', default=250, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
@@ -46,7 +47,7 @@ def process_args():
     parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 0.1, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
@@ -65,8 +66,10 @@ def process_args():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
-    elif args.in_dataset == 'ImageNet500':
-        args.n_cls = 500
+    elif args.in_dataset == 'ImageNet100':
+        args.n_cls = 100
+    elif 'ImageNet-subset':
+        args.n_cls = args.num_imagenet_cls
     
     if args.server in ['inst-01', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf' #save dir of dataset
@@ -76,7 +79,10 @@ def process_args():
     elif args.server in ['A100']:
         args.root_dir = ''
 
-    args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
+    if args.in_dataset == 'ImageNet-subset':
+        args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.num_imagenet_cls}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
+    else:
+        args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
@@ -88,10 +94,8 @@ def get_test_labels(args):
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'clean')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
-    elif args.in_dataset == "ImageNet100":
-        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join(args.root_dir,'ImageNet100'))
-    elif args.in_dataset == "ImageNet500":
-        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join(args.root_dir,'ImageNet500'))
+    elif args.in_dataset == "ImageNet-subset":
+        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}'))
     return test_labels
 
 
@@ -120,8 +124,8 @@ def main():
 
 
     net.eval()
-    test_labels = get_test_labels(args)
     if args.score in ['MIPCI', 'MIPCT', 'retrival']:
+        test_labels = get_test_labels(args)
         captions_dir = 'gen_captions'
         text_df = prepare_dataframe(captions_dir, dataset_name = 'imagenet_val') # currently only supports ImageNet10 captions
         if args.score == 'MIPCT':
@@ -136,6 +140,7 @@ def main():
             args.subset = True
         test_loader = set_val_loader(args, preprocess)
         train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
+        test_labels = get_test_labels(args)
     if args.score == 'analyze': # analyze the unnormalized feature magnitude; for debug and analysis only
         analysis_feature_manitude(args, net, preprocess, test_loader) 
         return 
@@ -172,7 +177,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet500']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
@@ -185,13 +190,13 @@ def main():
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_MIPC_scores_clip(args, net, ood_text_df, test_labels)
         elif args.score == 'MIPCI':
-            ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
+            ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset)
             out_score = get_retrival_scores_from_classwise_mean_clip(args, net, ood_text_df, preprocess)
         elif args.score == 'retrival':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else: # image as input 
-            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet500']:
+            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
