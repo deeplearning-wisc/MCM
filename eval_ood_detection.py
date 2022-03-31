@@ -191,7 +191,7 @@ def main():
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else: # image as input 
-            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100']:
+            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet500']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
