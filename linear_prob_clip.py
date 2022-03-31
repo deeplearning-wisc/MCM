@@ -180,9 +180,9 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_03',
+    parser.add_argument('--unique_id', type=str, default='test_place_holder',
                         help='id of the run')
-    parser.add_argument("--server", type=str, default='galaxy-01', help="run on which server")
+    parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     args = parser.parse_args()
 
     args.device = f"cuda:{args.gpu}"

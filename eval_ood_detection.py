@@ -32,7 +32,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting  
-    parser.add_argument('--score', default='Maha', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
@@ -46,14 +46,14 @@ def process_args():
     parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 1, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
     #Misc 
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "te", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = "inst-01", type =str, 
+    parser.add_argument('--name', default = "save_fingerprint", type =str, help = "unique ID for the run")    
+    parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=2, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
