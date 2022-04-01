@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import torch
+import torch.nn.functional as F
 import clip
 import os
 import skimage
@@ -94,6 +95,33 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
             np.save(f, all_features)
             np.save(f, all_labels)
 
+        return all_features, all_labels
+    else: 
+        return torch.cat(all_features), torch.cat(all_labels)
+
+def get_fingerprint(args, model, test_labels, dataloader, to_np = True, dataset = 'none'):
+    '''
+    extract image features from the dataset
+    '''
+    
+    all_features = []
+    all_labels = []
+    with torch.no_grad():
+        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+        text_features = model.encode_text(text_inputs).float()
+        text_features /= text_features.norm(dim=-1, keepdim=True)  
+        for images, labels in tqdm(dataloader):
+            image_features = model.encode_image(images.to(args.device)).float()
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+            fingerprint = image_features @ text_features.T 
+            all_features.append(fingerprint)
+            all_labels.append(labels)
+    if to_np:
+        all_features = torch.cat(all_features).cpu().numpy()
+        all_labels = torch.cat(all_labels).cpu().numpy()
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_fp_{dataset}_{args.max_count}_softmax_{args.softmax}.npy'), 'wb') as f:
+            np.save(f, all_features)
+            np.save(f, all_labels)
         return all_features, all_labels
     else: 
         return torch.cat(all_features), torch.cat(all_labels)
