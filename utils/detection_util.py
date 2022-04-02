@@ -360,13 +360,12 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
             else: # for MIP
-
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
                 output = image_features @ text_features.T
                 if args.score == 'MIP_topk':
-                    output = 
+                    pass
                 #debug 
                 # fingerprints.append(to_np(output))
                 # labels_all.append(to_np(labels))

@@ -20,20 +20,20 @@ def process_args():
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
+    parser.add_argument('-b', '--batch-size', default=15, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
+    parser.add_argument('--model', default='CLIP-Linear', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
     parser.add_argument('--epoch', default ="40", type=str,
                              help='which epoch to test')
-    parser.add_argument('--classifier_ckpt', default ="ImageNet_ViT-B-16_lr_0.5_decay_0_bsz_512_test_02_warm", type=str,
+    parser.add_argument('--classifier_ckpt', default ="ImageNet_ViT-L-14_lr_0.1_decay_0_bsz_512_test_03_warm", type=str,
                              help='which classifier to load')
-    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
+    parser.add_argument('--feat_dim', type=int, default=768, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='MIP_topk', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='odin_logits', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
@@ -48,16 +48,16 @@ def process_args():
     parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
     parser.add_argument('--T', default = 1, type =float, help = "temperature") 
-    parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
+    parser.add_argument('--noiseMagnitude', default = 0.002, type =float, help = "noise maganitute for inputs") 
     # for fingerprint score 
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     parser.add_argument('--name', default = "fingerprint", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = 'inst-01', type =str, 
+    parser.add_argument('--server', default = 'galaxy-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=6, type=int,
+    parser.add_argument('--gpu', default=5, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
@@ -79,6 +79,7 @@ def process_args():
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['galaxy-01', 'galaxy-02']:
         args.root_dir = '/nobackup-slow/dataset'
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['A100']:
         args.root_dir = ''
 
