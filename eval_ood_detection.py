@@ -33,9 +33,9 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting  
-    parser.add_argument('--score', default='fingerprint', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MIP_topk', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
-                                                                        'MIP', 'MIPT','MIPT-wordnet', 'fingerprint',# img->text encoder; feature space
+                                                                        'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
                                                                         'MIPCT', 'MIPCI', 'retrival' # text->img encoder; feature space
                                                                         ], help='score options')  
@@ -47,7 +47,7 @@ def process_args():
     parser.add_argument('--template_dir', type = str, default = '/nobackup/img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 1, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
     # for fingerprint score 
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
@@ -148,7 +148,7 @@ def main():
         analysis_feature_manitude(args, net, preprocess, test_loader) 
         return 
 
-    if args.score in ['MIP', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
+    if args.score in ['MIP', 'MIP_topk', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP': # MIP and variants
