@@ -20,7 +20,7 @@ def process_args():
     parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=250, type=int,
+    parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
@@ -33,28 +33,31 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ImageNet')
     #detection setting  
-    parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='fingerprint', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
-                                                                        'MIP', 'MIPT','MIPT-wordnet', # img->text encoder; feature space
+                                                                        'MIP', 'MIPT','MIPT-wordnet', 'fingerprint',# img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
                                                                         'MIPCT', 'MIPCI', 'retrival' # text->img encoder; feature space
-                                                                        ], help='score options')
-    parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')   
-    parser.add_argument('--K', default = 100, type =int, help = "# of nearest neighbor")
+                                                                        ], help='score options')  
+    # for knn score 
+    parser.add_argument('--K', default = 10, type =int, help = "# of nearest neighbor")
     # for Mahalanobis score
-    parser.add_argument('--normalize', type = bool, default = True, help='whether use normalized features for Maha score')
-    parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
-    parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
+    parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
+    parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--template_dir', type = str, default = '/nobackup/img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--max_count', default = 500, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 0.1, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
+    # for fingerprint score 
+    parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
     #Misc 
+    parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "save_fingerprint", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "fingerprint", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=7, type=int,
+    parser.add_argument('--gpu', default=6, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
@@ -136,7 +139,7 @@ def main():
             in_score = get_retrival_scores_clip(args, net, text_df, 12, num_per_cls = 10, generate = False, template_dir = 'img_templates')
     else:
         args.subset = False
-        if args.score in ['Maha', 'knn'] and args.in_dataset in ['ImageNet']:
+        if args.score in ['Maha', 'knn', 'fingerprint'] and args.in_dataset in ['ImageNet']:
             args.subset = True
         test_loader = set_val_loader(args, preprocess)
         train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
@@ -158,8 +161,11 @@ def main():
         num_right = len(right_score)
         num_wrong = len(wrong_score)
         log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
+    
     elif args.score == 'knn':
         in_score, index_bad = get_knn_scores_from_clip_img_encoder_id(args, net, train_loader, test_loader)
+    elif args.score == 'fingerprint':
+        in_score, index_bad = get_fp_scores_from_clip_id(args, net, test_labels, train_loader, test_loader)
     elif args.score == 'Maha':
         # mean = get_mean(args, net, preprocess)
         # prec = get_prec(args, net, train_loader)
@@ -203,6 +209,8 @@ def main():
 
             if args.score == 'knn':
                 out_score = get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader,out_dataset, index_bad)
+            elif args.score == 'fingerprint':
+                out_score = get_fp_scores_from_clip_ood(args, net, test_labels, ood_loader, out_dataset, index_bad)
             elif args.score == 'Maha':
                 out_score = get_Mahalanobis_score(args, net, ood_loader, classwise_mean, precision, in_dist = False)
             elif args.score == 'odin':

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import umap
 import scipy
+import pandas as pd
 
 # plot kde plots
 def plot_distribution(args, id_scores, ood_scores, out_dataset):
@@ -14,6 +15,7 @@ def plot_distribution(args, id_scores, ood_scores, out_dataset):
     # plt.ylim(0, 0.3)
     # plt.xlim(-10, 50)
     plt.savefig(os.path.join(args.log_directory,f"{args.score}_{out_dataset}.png"), bbox_inches='tight')
+
 
 # plot umaps
 def plot_umap_id_only(name = 'all_feat_ID_test_500_True', template_dir = 'img_templates', subset = False):
@@ -117,11 +119,29 @@ def plot_hist():
     plt.savefig(f"T={T}.pdf", bbox_inches = 'tight',
         pad_inches = 0)
 
+def plot_hist_all_output(template_dir = '/nobackup/img_templates', dataset = 'ID_test', max_count = 500, softmax = False, T = 1):
+    with open(os.path.join(template_dir, 'all_feat', f'all_fp_{dataset}_{max_count}_softmax_{softmax}.npy'), 'rb') as f:
+            output =np.load(f)
+    output = output.astype('float32') / T
+    # output = scipy.special.softmax(output, axis = 1)
+
+    for j in range(20):
+        class_idx = ['i' for i in range(1000)][j*50: (1+j)*50]
+        temp_data = pd.DataFrame(output[:5000,j*50: (1+j)*50].tolist(), columns =class_idx)
+        # ax = sns.barplot(x="alpha", y="AUROC", data=auroc_alpha,
+        #                  palette=sns.color_palette("summer"))
+        ax = temp_data.boxplot(column=class_idx, fontsize = 1, figsize = (500, 20))  
+        # ax = sns.boxplot(x="class_idx", y="inner prod", data=temp_data, palette=sns.color_palette("summer"))
+        # ax.set(ylim=(94, 96.5))
+        ax.set_title(f"{dataset}_T = {T}_class_idx_{j*50} to {50*(j+1)}")
+        show_values_on_bars(ax)
+        plt.savefig(f"{dataset}_T={T}_{j}.png", bbox_inches = 'tight', pad_inches = 0)
+
 def plot_umap_id_fingerprint(name = 'fingerprint', template_dir = 'img_templates', T = 1):
     with open(os.path.join(template_dir, f'{name}.npy'), 'rb') as f:
         feat =np.load(f)
         labels = np.load(f)
-    feat *= T
+    feat /= T
     feat = scipy.special.softmax(feat, axis = 1)
     n_neighbors = 20
     reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
@@ -144,10 +164,11 @@ def plot_umap_id_fingerprint(name = 'fingerprint', template_dir = 'img_templates
     plt.savefig(f'{name}_umap_T_{T}.pdf')
 
 if __name__ == '__main__':
-    ood_names = ['dtd','places365', 'SUN']
+    # ood_names = ['dtd','places365', 'SUN']
     # for ood_name in ood_names:
     #     plot_umap_id_ood(ood_name = ood_name)
     #plot_umap_id_only()
     # plot_umap_id_ood()
-    plot_umap_id_fingerprint(T = 0.1)
+    # plot_umap_id_fingerprint(T = 0.1)
+    plot_hist_all_output(T = 1)
 

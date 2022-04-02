@@ -5,12 +5,13 @@ from tqdm import tqdm
 import clip
 import torchvision
 import sklearn.metrics as sk
-from utils.common import get_features
+from utils.common import get_features, get_fingerprint
 from utils.plot_util import plot_distribution
 import utils.svhn_loader as svhn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
 import faiss
+import scipy
 from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
@@ -595,6 +596,66 @@ def get_knn_scores_from_clip_img_encoder_ood(args, net, ood_loader, out_dataset,
         with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{out_dataset}_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
             food =np.load(f)
     food = food.astype('float32')
+    D, _ = index_bad.search(food, args.K)
+    scores_ood = D[:,-1]
+    return scores_ood
+
+def get_fp_scores_from_clip_id(args, net, test_labels, train_loader, test_loader):
+    '''
+    used for fingerprint knn score for ID dataset  
+    '''
+    if args.generate: 
+        ftrain,  = get_fingerprint(args, net, test_labels, train_loader, dataset = 'ID_train')
+        ftest,_ = get_fingerprint(args, net, test_labels, test_loader, dataset = 'ID_test')
+    else:
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_fp_ID_train_{args.max_count}_softmax_{args.softmax}.npy'), 'rb') as f:
+            ftrain =np.load(f)
+        with open(os.path.join(args.template_dir,'all_feat', f'all_fp_ID_test_{args.max_count}_softmax_{args.softmax}.npy'), 'rb') as f:
+            ftest =np.load(f) 
+    index = faiss.IndexFlatL2(ftrain.shape[1])
+    ftrain = ftrain.astype('float32') / args.T
+    ftest = ftest.astype('float32') /args.T
+
+    ftrain = torch.from_numpy(ftrain)
+    filter_val, _ = torch.topk(ftrain, k = 10, dim = 1)
+    ftrain.masked_fill_(ftrain < filter_val[:,-1].view(-1,1),0) #filter_val[:,-1]: tensor([2.6386, 2.2513, 2.2839,  ..., 2.5120, 2.3718, 2.3910])
+    ftrain = ftrain.numpy()
+
+    ftest = torch.from_numpy(ftest)
+    filter_val, _ = torch.topk(ftest, k = 10, dim = 1)
+    ftest.masked_fill_(ftest < filter_val[:,-1].view(-1,1),0)
+    ftest = ftest.numpy()
+
+
+    # ftrain = scipy.special.softmax(ftrain, axis = 1)
+    # ftest = scipy.special.softmax(ftest, axis = 1)
+
+    index.add(ftrain)
+    index_bad = index
+    D, _ = index_bad.search(ftest, args.K, )
+    scores = D[:,-1]
+    return scores, index_bad
+
+def get_fp_scores_from_clip_ood(args, net, test_labels, ood_loader, out_dataset, index_bad):
+    '''
+    used for fingerprint knn score for OOD dataset
+    '''
+    # args.generate = True
+    if args.generate: 
+        food, _ = get_fingerprint(args, net, test_labels, ood_loader,  dataset = out_dataset) 
+    else: 
+        with open(os.path.join(args.template_dir, 'all_feat', f'all_fp_{out_dataset}_{args.max_count}_softmax_{args.softmax}.npy'), 'rb') as f:
+            food =np.load(f) 
+        
+    food = food.astype('float32') / args.T
+
+    food = torch.from_numpy(food)
+    filter_val, _ = torch.topk(food, k = 10, dim = 1)
+    food.masked_fill_(food < filter_val[:,-1].view(-1,1),0)
+    food = food.numpy()
+
+    # food = scipy.special.softmax(food, axis = 1)
+
     D, _ = index_bad.search(food, args.K)
     scores_ood = D[:,-1]
     return scores_ood
