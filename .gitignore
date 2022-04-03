@@ -23,6 +23,7 @@ ENV/
 env.bak/
 venv.bak/
 
+PLOTS/
 img_templates/
 img_templates/all_feat/
 #results

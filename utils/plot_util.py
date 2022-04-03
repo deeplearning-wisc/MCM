@@ -6,7 +6,9 @@ import os
 import umap
 import scipy
 import pandas as pd
-
+import torch
+import seaborn as sns
+import torch.nn.functional as F
 # plot kde plots
 def plot_distribution(args, id_scores, ood_scores, out_dataset):
     sns.set(style="white", palette="muted")
@@ -153,15 +155,81 @@ def plot_umap_id_fingerprint(name = 'fingerprint', template_dir = 'img_templates
     ax = fig.add_subplot(1, 1, 1, title='Umap' )
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
-    # Create the scatter
-    import seaborn as sns
-    import pandas as pd
+
     data = pd.DataFrame(list(zip(umap_results[:,0],umap_results[:,1], labels)), columns =['x','y', 'labels'])
     ax = sns.scatterplot(x= 'x', y= 'y', data = data, cmap ='Spectral', c = labels )
     ax.legend(fontsize = 15) 
 
     plt.tight_layout()
     plt.savefig(f'{name}_umap_T_{T}.pdf')
+
+def debug_umap_fingerprint(out_dataset, id_dataset, template_dir = '/nobackup/img_templates', T = 1, k = 10, softmax = False):
+
+    with open(os.path.join(template_dir, 'all_feat', f'all_fp_{id_dataset}_500_softmax_False.npy'), 'rb') as f:
+        fid =np.load(f)
+        labels = np.load(f)
+    fid = fid.astype('float32') / T
+
+    fid = torch.from_numpy(fid)
+    if softmax:
+        fid = F.softmax(fid, dim = 1)
+    filter_val_id, _ = torch.topk(fid, k = k, dim = 1)
+    fid.masked_fill_(fid < filter_val_id[:,-1].view(-1,1),0)
+    # if softmax:
+    #     fid = F.softmax(filter_val, dim = 1)
+    fid = fid.numpy()
+
+    with open(os.path.join(template_dir, 'all_feat', f'all_fp_{out_dataset}_500_softmax_False.npy'), 'rb') as f:
+            food =np.load(f) 
+        
+    food = food.astype('float32') / T
+
+    food = torch.from_numpy(food)
+    if softmax:
+        food = F.softmax(food, dim = 1)
+    filter_val_ood, _ = torch.topk(food, k = k, dim = 1)
+    food.masked_fill_(food < filter_val_ood[:,-1].view(-1,1),0)
+    # if softmax:
+    #     food = F.softmax(filter_val, dim = 1)
+    food = food.numpy()
+
+
+    # feat = scipy.special.softmax(feat, axis = 1)
+    labels = np.zeros(len(fid) + len(food))
+    labels[:len(fid)] = 1
+    label_to_class_idx = {0: out_dataset, 1: "ID"}
+    debug_distribution(fid.max(axis = 1), food.max(axis =1), out_dataset, option = 'max', k = k, softmax = softmax)
+    debug_distribution(filter_val_id.mean(axis = 1), filter_val_ood.mean(axis = 1), out_dataset, option = 'mean', k = k, softmax = softmax)
+    return
+    fall = np.concatenate((fid, food))
+    n_neighbors = 20
+    reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
+    umap_results = reducer.fit_transform(fall)
+    print(umap_results.shape)
+    # Create the figure
+    fig = plt.figure( figsize=(16,16) )
+    ax = fig.add_subplot(1, 1, 1, title='Umap' )
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    # Create the scatter
+    colors = ['#f4d35e', '#f95738']
+    sns.set_palette(sns.color_palette(colors))
+    labels = [label_to_class_idx[i] for i in labels]
+    data = pd.DataFrame(list(zip(umap_results[:,0],umap_results[:,1], labels)), columns =['x','y', 'labels'])
+    ax = sns.scatterplot(x= 'x', y= 'y', data = data, palette = colors, hue='labels' )
+    ax.legend(fontsize = 15) 
+
+    plt.tight_layout()
+    name =f'{out_dataset}_{id_dataset}_n_neighbor_{n_neighbors}'
+    plt.savefig(f'{name}_umap_T_{T}_k={k}.pdf')
+
+def debug_distribution(id_scores, ood_scores, out_dataset, option = 'max', k = 10, softmax = False):
+    sns.set(style="white", palette="muted")
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", fill = True, alpha = 0.5)
+    plt.title(f"ID v.s. {out_dataset} score")
+    # plt.ylim(0, 0.3)
+    # plt.xlim(-10, 50)
+    plt.savefig(os.path.join("PLOTS", f"topK_softmax={softmax}_k={k}_{option}_{out_dataset}.png"), bbox_inches='tight')
 
 if __name__ == '__main__':
     # ood_names = ['dtd','places365', 'SUN']
@@ -170,5 +238,9 @@ if __name__ == '__main__':
     #plot_umap_id_only()
     # plot_umap_id_ood()
     # plot_umap_id_fingerprint(T = 0.1)
-    plot_hist_all_output(T = 1)
+    # plot_hist_all_output(T = 1)
+    softmax = True
+    for k in [3]:
+        debug_umap_fingerprint(out_dataset = 'SUN', id_dataset = 'ID_test', k = k, softmax = softmax)
+        debug_umap_fingerprint(out_dataset = 'iNaturalist', id_dataset = 'ID_test', k = k, softmax = softmax)
 

@@ -16,6 +16,7 @@ from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
 
+import umap
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
     '''
@@ -358,11 +359,12 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
             else: # for MIP
-
                 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
                 text_features = net.encode_text(text_inputs).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
                 output = image_features @ text_features.T
+                if args.score == 'MIP_topk':
+                    pass
                 #debug 
                 # fingerprints.append(to_np(output))
                 # labels_all.append(to_np(labels))
@@ -611,7 +613,7 @@ def get_fp_scores_from_clip_id(args, net, test_labels, train_loader, test_loader
             ftrain =np.load(f)
         with open(os.path.join(args.template_dir,'all_feat', f'all_fp_ID_test_{args.max_count}_softmax_{args.softmax}.npy'), 'rb') as f:
             ftest =np.load(f) 
-    index = faiss.IndexFlatL2(ftrain.shape[1])
+    
     ftrain = ftrain.astype('float32') / args.T
     ftest = ftest.astype('float32') /args.T
 
@@ -625,10 +627,14 @@ def get_fp_scores_from_clip_id(args, net, test_labels, train_loader, test_loader
     ftest.masked_fill_(ftest < filter_val[:,-1].view(-1,1),0)
     ftest = ftest.numpy()
 
+    n_neighbors = 20
+    reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
+    ftest = reducer.fit_transform(ftest)
+    ftrain = reducer.fit_transform(ftrain)
 
     # ftrain = scipy.special.softmax(ftrain, axis = 1)
     # ftest = scipy.special.softmax(ftest, axis = 1)
-
+    index = faiss.IndexFlatL2(ftrain.shape[1])
     index.add(ftrain)
     index_bad = index
     D, _ = index_bad.search(ftest, args.K, )
@@ -652,6 +658,10 @@ def get_fp_scores_from_clip_ood(args, net, test_labels, ood_loader, out_dataset,
     filter_val, _ = torch.topk(food, k = 10, dim = 1)
     food.masked_fill_(food < filter_val[:,-1].view(-1,1),0)
     food = food.numpy()
+
+    n_neighbors = 20
+    reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
+    food = reducer.fit_transform(food)
 
     # food = scipy.special.softmax(food, axis = 1)
 
