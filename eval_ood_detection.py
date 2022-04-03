@@ -6,7 +6,7 @@ import clip
 from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed
+from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -83,7 +83,7 @@ def process_args():
         args.root_dir = ''
 
     if args.in_dataset == 'ImageNet-subset':
-        args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.num_imagenet_cls}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
+        args.log_directory = f"results/ImageNet{args.num_imagenet_cls}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     else:
         args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     os.makedirs(args.log_directory, exist_ok= True)
@@ -97,8 +97,10 @@ def get_test_labels(args):
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'clean')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
+    elif args.in_dataset ==  "ImageNet100":
+        test_labels = obtain_ImageNet100_classes(loc = os.path.join('./data', 'ImageNet100'))
     elif args.in_dataset == "ImageNet-subset":
-        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}'))
+        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}', args.name))
     return test_labels
 
 

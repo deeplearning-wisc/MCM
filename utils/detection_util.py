@@ -15,7 +15,6 @@ import scipy
 from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
-from nltk.corpus import wordnet as wn
 
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):

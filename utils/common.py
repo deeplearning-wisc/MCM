@@ -49,6 +49,21 @@ def obtain_ImageNet10_classes(loc = None):
     class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
     return class_dict.keys()
 
+def obtain_ImageNet100_classes(loc):
+    # sort by values
+    with open(os.path.join(loc, 'train_100.txt')) as f:
+        class_set = {line.split('/')[1].strip() for line in f.readlines()}
+
+    class_name_set = []
+    with open('data/ImageNet/imagenet_class_index.json') as file: 
+        class_index_raw = json.load(file)
+        class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
+        class_name_set = [class_index[c] for c in class_set]
+
+    class_name_set = [x.replace('_', ' ') for x in class_name_set]
+
+    return class_name_set
+
 def obtain_ImageNet_subset_classes(loc):
     # sort by values
     with open(os.path.join(loc, 'class_list.txt')) as f:
