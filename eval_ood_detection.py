@@ -17,7 +17,7 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='bird200', type=str, 
+    parser.add_argument('--in_dataset', default='car196', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
@@ -26,7 +26,7 @@ def process_args():
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-L/14',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
     parser.add_argument('--epoch', default ="40", type=str,
@@ -59,7 +59,7 @@ def process_args():
     parser.add_argument('--name', default = "test_mip", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=6, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])

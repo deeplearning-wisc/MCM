@@ -85,7 +85,7 @@ class OxfordIIITPet(VisionDataset):
         self._images = [self._images_folder / f"{image_id}.jpg" for image_id in image_ids]
         self._segs = [self._segs_folder / f"{image_id}.png" for image_id in image_ids]
 
-        self.class_names_str = self.self.classes
+        self.class_names_str = self.classes
 
     def __len__(self) -> int:
         return len(self._images)
