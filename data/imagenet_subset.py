@@ -21,7 +21,7 @@ class ImageNetSubset(Dataset):
         if save:
             save_path = os.path.join(class_list_loc, f'ImageNet{n_cls}', id)
             if not os.path.exists(save_path):
-                os.mkdir(save_path)
+                os.makedirs(save_path)
             with open(os.path.join(save_path, 'class_list.txt'), 'w+') as f:
                 f.writelines([line + '\n' for line in self.class_list])
 
