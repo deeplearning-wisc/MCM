@@ -143,7 +143,7 @@ def parse_option():
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=4, type=int,
+    parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
