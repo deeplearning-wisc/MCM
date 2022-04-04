@@ -11,7 +11,7 @@ from torchvision import datasets, transforms
 import torchvision.transforms as transforms
 from continuum.datasets import ImageNet100
 from data.imagenet_subset import ImageNetSubset
-
+from dataset import Cub2011,StanfordCars,Flowers102,Food101,OxfordIIITPet
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
 def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False, subset = False):
@@ -74,6 +74,27 @@ def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False
         dataset = ImageNetSubset(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess, id=args.name)
         train_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
+    
+    elif args.in_dataset == "bird200":
+        train_loader = torch.utils.data.DataLoader(Cub2011(root, train = True, transform=preprocess),
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+    
+    elif args.in_dataset == "car196":
+        train_loader = torch.utils.data.DataLoader(StanfordCars(root, split = "train", download = True, transform=preprocess),
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+    
+    elif args.in_dataset == "flower102":
+        train_loader = torch.utils.data.DataLoader(Flowers102(root, split = "train", download = True, transform=preprocess),
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+    
+    elif args.in_dataset == "food101":
+        train_loader = torch.utils.data.DataLoader(Food101(root, split = "train", download = True, transform=preprocess),
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+    
+    elif args.in_dataset == "pet37":
+        train_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split = "trainval", download = True, transform=preprocess),
+                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+
 
     return train_loader
 
@@ -124,6 +145,25 @@ def set_val_loader(args, preprocess = None):
         dataset = ImageNetSubset(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
         val_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=args.batch_size, shuffle=False, **kwargs)
+    elif args.in_dataset == "bird200":
+        val_loader = torch.utils.data.DataLoader(Cub2011(root, train = False, transform=preprocess),
+                    batch_size=args.batch_size, shuffle=False, **kwargs)
+    
+    elif args.in_dataset == "car196":
+        val_loader = torch.utils.data.DataLoader(StanfordCars(root, split = "test", download = True, transform=preprocess),
+                    batch_size=args.batch_size, shuffle=False, **kwargs)
+    
+    elif args.in_dataset == "flower102":
+        val_loader = torch.utils.data.DataLoader(Flowers102(root, split = "test", download = True, transform=preprocess),
+                    batch_size=args.batch_size, shuffle=False, **kwargs)
+    
+    elif args.in_dataset == "food101":
+        val_loader = torch.utils.data.DataLoader(Food101(root, split = "test", download = True, transform=preprocess),
+                    batch_size=args.batch_size, shuffle=False, **kwargs)
+    
+    elif args.in_dataset == "pet37":
+        val_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split = "test", download = True, transform=preprocess),
+                    batch_size=args.batch_size, shuffle=False, **kwargs)
 
     return val_loader
 

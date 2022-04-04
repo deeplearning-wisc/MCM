@@ -7,11 +7,47 @@ from tqdm import tqdm
 import logging
 import clip
 from torch.utils.data import DataLoader
-# from torchvision import transforms
+from torchvision import transforms
 from sklearn.utils import shuffle
 from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
+from transformers import ViTFeatureExtractor,  ViTModel
 from utils import *
+
+def set_loader(args, preprocess = None):
+    root = args.root_dir
+    feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+    if preprocess == None:
+        normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
+                                        std=(0.5, 0.5, 0.5)) # for ViT
+        val_preprocess = transforms.Compose([
+            transforms.Resize(feature_extractor.size),
+            transforms.CenterCrop(feature_extractor.size),
+            transforms.ToTensor(),
+            normalize
+        ])
+        train_preprocess = transforms.Compose([
+            transforms.RandomResizedCrop(feature_extractor.size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize
+        ])
+        
+    kwargs = {'num_workers': 4, 'pin_memory': True}
+
+
+    if args.in_dataset == "ImageNet":
+        if args.server in ['inst-01', 'inst-04']:
+            path = os.path.join('/nobackup','ImageNet')
+        elif args.server in ['galaxy-01', 'galaxy-02']:
+            path = os.path.join(root, 'ILSVRC-2012')
+        val_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(path, "val"), transform=val_preprocess),
+                batch_size=args.batch_size, shuffle=False,  **kwargs)
+        train_loader = torch.utils.data.DataLoader(
+                datasets.ImageFolder(os.path.join(path, "train"), transform=train_preprocess),
+                batch_size=args.batch_size, shuffle=True, **kwargs)
+    return train_loader, val_loader
 
 def set_up_logger(args):
     log = logging.getLogger(__name__)
@@ -59,10 +95,10 @@ def set_optimizer(args, model):
     return optimizer
 
 def set_model(args):
-    if args.model == 'clip':
-        featurizer, preprocess = clip.load(args.ckpt, args.device)
+    if args.model == 'vit':
+        featurizer =  ViTModel.from_pretrained('google/vit-base-patch16-224').cuda()
     classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls).cuda()
-    return preprocess, featurizer, classifier
+    return featurizer, classifier
 
 def linear_probe_one_epoch(args, train_loader, featurizer, classifier, criterion, optimizer, epoch, log):
     """one epoch training"""
@@ -70,20 +106,18 @@ def linear_probe_one_epoch(args, train_loader, featurizer, classifier, criterion
     classifier.train()
     losses = AverageMeter()
     top1 = AverageMeter()
-
-    for idx, (images, labels) in enumerate(train_loader):
-        images = images.cuda(non_blocking=True)
-        labels = labels.cuda(non_blocking=True)
+    tqdm_object = tqdm(train_loader, total=len(train_loader))
+    for idx, (images, labels)in enumerate(tqdm_object):
+        images = images.float().cuda()
+        labels = labels.cuda()
         bsz = labels.shape[0]
         # warm-up learning rate
         warmup_learning_rate(args, epoch, idx, len(train_loader), optimizer)
 
-        # compute loss
         with torch.no_grad():
-            features = featurizer.encode_image(images).float() #convert from fp16 to fp32
-            if args.normalize: 
-                features /= features.norm(dim=-1, keepdim=True)
-        output = classifier(features.detach())
+            features = featurizer(pixel_values = images).last_hidden_state 
+
+        output = classifier(features[:, 0, :].detach())
         loss = criterion(output, labels)
 
         # update metric
@@ -116,10 +150,9 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
             labels = labels.cuda()
             bsz = labels.shape[0]
             # forward
-            features = featurizer.encode_image(images).float()
-            if args.normalize: 
-                features /= features.norm(dim=-1, keepdim=True)
-            output = classifier(features)
+            features = featurizer(pixel_values = images).last_hidden_state 
+
+            output = classifier(features[:, 0, :].detach())
             loss = criterion(output, labels)
 
             # update metric
@@ -139,17 +172,16 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
 
 
 def parse_option():
-    parser = argparse.ArgumentParser('argument for playing with CLIP')
+    parser = argparse.ArgumentParser('argument for playing with ViT')
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     #model setup
-    parser.add_argument('--model', type=str, default='clip',
+    parser.add_argument('--model', type=str, default='vit',
                         help='model')
-    parser.add_argument('--ckpt', type=str, default='ViT-L/14',
-                        choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
+    parser.add_argument('--ckpt', type=str, default='google/vit-base-patch16-224-in21k', help='which pretrained img encoder to use')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
@@ -180,7 +212,7 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_place_holder',
+    parser.add_argument('--unique_id', type=str, default='test_correctness',
                         help='id of the run')
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     args = parser.parse_args()
@@ -190,7 +222,7 @@ def parse_option():
     cudnn.benchmark = True
 
     args.lr_decay_epochs = [int(epoch) for epoch in args.lr_decay_epochs.split(",")]
-    CKPT_MARKER = {'ViT-B/32':'ViT-B-32', 'ViT-B/16':'ViT-B-16', 'ViT-L/14':'ViT-L-14'}
+    CKPT_MARKER = {'google/vit-base-patch16-224-in21k':'google_vit-base-patch16-224-in21k'}
     args.unique_id = '{}_{}_lr_{}_decay_{}_bsz_{}_{}'.\
         format(args.in_dataset, CKPT_MARKER[args.ckpt], args.learning_rate, args.weight_decay,
                args.batch_size, args.unique_id)
@@ -219,7 +251,7 @@ def parse_option():
 
     return args
 
-def linear_probe_pytorch():
+def linear_probe_vit():
     args = parse_option()
     
     # set up training 
@@ -231,9 +263,8 @@ def linear_probe_pytorch():
         args.n_cls = 1000
 
     log = set_up_logger(args)
-    preprocess, featurizer, classifier = set_model(args)
-    val_loader = set_val_loader(args, preprocess)
-    train_loader = set_train_loader(args, preprocess)
+    featurizer, classifier = set_model(args)
+    train_loader, val_loader = set_loader(args)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = set_optimizer(args, classifier)
 
@@ -255,35 +286,6 @@ def linear_probe_pytorch():
                 args.save_dir, f'{args.unique_id}_linear_probe_epoch_{epoch}.pth')
             save_model_clf(args, classifier, optimizer, epoch, save_file)
 
-def linear_probe_sklearn():
-    '''
-    train a logistic regression on top of frozen image features extracted by CLIP image encoder (ViT or ResNet)
-    CPU version with sklearn
-    '''
-    args = parse_option()
-    # set up training 
-    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
-        args.n_cls = 10
-    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
-        args.n_cls = 100
-    elif args.in_dataset == "ImageNet":
-        args.n_cls = 1000
-    preprocess, model, classifier = set_model(args)
-    val_loader = set_val_loader(args, preprocess)
-    train_loader = set_train_loader(args, preprocess)
-    from sklearn.linear_model import LogisticRegression
-
-    train_features, train_labels = get_features(args, model, train_loader, to_np = True)
-    test_features, test_labels = get_features(args, model, val_loader, to_np = True)
-    # Note: C is the inverse of regularization strength; must be a positive float. 
-    # Like in support vector machines, smaller values specify stronger regularization.
-    classifier = LogisticRegression(random_state=0, C=0.316, max_iter=1000, verbose=1)
-    classifier.fit(train_features, train_labels)
-    # Evaluate using the logistic regression classifier
-    predictions = classifier.predict(test_features)
-    accuracy = np.mean((test_labels == predictions).astype(float)) * 100.
-    print(f"Accuracy = {accuracy:.3f}")
 
 if __name__ == '__main__':
-    linear_probe_pytorch()
-    # linear_probe_sklearn()
+    linear_probe_vit()

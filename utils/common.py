@@ -79,6 +79,22 @@ def obtain_ImageNet_subset_classes(loc):
 
     return class_name_set
 
+def get_num_cls(args):    
+    NUM_CLS_DICT = {
+        'CIFAR-10': 10, 'ImageNet10': 10,
+        'pet37':37,
+        'ImageNet100': 100, 'CIFAR-100': 100,
+        'food101': 101, 'flower102': 102,
+        'car196':196, 'bird200':200,
+        'ImageNet': 1000,
+    }
+    if 'ImageNet-subset':
+        n_cls = args.num_imagenet_cls
+    else:
+        n_cls = NUM_CLS_DICT[args.in_dataset]
+    return n_cls
+
+
 def get_image_dataloader(image_dataset_name, preprocess, train = False):
     data_dir = os.path.join('data',image_dataset_name)
     if image_dataset_name.startswith('CIFAR'):
