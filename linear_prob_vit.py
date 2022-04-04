@@ -38,14 +38,14 @@ def set_loader(args, preprocess = None):
 
     if args.in_dataset == "ImageNet":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet','val')
+            path = os.path.join('/nobackup','ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
-            path = os.path.join(root, 'ILSVRC-2012', 'val')
+            path = os.path.join(root, 'ILSVRC-2012')
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(path, transform=val_preprocess),
+                datasets.ImageFolder(os.path.join(path, "val"), transform=val_preprocess),
                 batch_size=args.batch_size, shuffle=False,  **kwargs)
         train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(path, transform=train_preprocess),
+                datasets.ImageFolder(os.path.join(path, "train"), transform=train_preprocess),
                 batch_size=args.batch_size, shuffle=True, **kwargs)
     return train_loader, val_loader
 
@@ -176,7 +176,7 @@ def parse_option():
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
-    parser.add_argument('--gpu', default=5, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='vit',
@@ -188,7 +188,7 @@ def parse_option():
     #optimization basic
     parser.add_argument('--epochs', type=int, default=40,
                         help='number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=1,
+    parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='init lr')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
@@ -212,7 +212,7 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_place_holder',
+    parser.add_argument('--unique_id', type=str, default='test_correctness',
                         help='id of the run')
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
     args = parser.parse_args()
