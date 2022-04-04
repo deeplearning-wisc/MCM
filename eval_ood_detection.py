@@ -6,7 +6,7 @@ import clip
 from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed
+from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed, get_num_cls
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -17,10 +17,12 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
-                        choices = ['CIFAR-10', 'CIFAR-100', 'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset'], help='in-distribution dataset')
+    parser.add_argument('--in_dataset', default='bird200', type=str, 
+                        choices = ['CIFAR-10', 'CIFAR-100', 
+                        'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
+                        'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=15, type=int,
+    parser.add_argument('-b', '--batch-size', default=100, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
@@ -33,7 +35,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='knn', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
@@ -54,7 +56,7 @@ def process_args():
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "test_knn", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "test_mip", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=5, type=int,
@@ -63,16 +65,7 @@ def process_args():
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
 
-    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
-        args.n_cls = 10
-    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
-        args.n_cls = 100
-    elif args.in_dataset == "ImageNet":
-        args.n_cls = 1000
-    elif args.in_dataset == 'ImageNet100':
-        args.n_cls = 100
-    elif 'ImageNet-subset':
-        args.n_cls = args.num_imagenet_cls
+    args.n_cls = get_num_cls(args)
     
     if args.server in ['inst-01', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf' #save dir of dataset
@@ -91,7 +84,7 @@ def process_args():
 
     return args
 
-def get_test_labels(args):
+def get_test_labels(args, loader = None):
     if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
         test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
     elif args.in_dataset ==  "ImageNet":
@@ -102,6 +95,8 @@ def get_test_labels(args):
         test_labels = obtain_ImageNet100_classes(loc = os.path.join('./data', 'ImageNet100'))
     elif args.in_dataset == "ImageNet-subset":
         test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}', args.name))
+    elif args.in_dataset in ['bird200', 'car196','flower102','food101','pet37']:
+        test_labels = loader.dataset.class_names_str
     return test_labels
 
 
@@ -146,7 +141,7 @@ def main():
             args.subset = True
         test_loader = set_val_loader(args, preprocess)
         train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
-        test_labels = get_test_labels(args)
+        test_labels = get_test_labels(args, test_loader)
     if args.score == 'analyze': # analyze the unnormalized feature magnitude; for debug and analysis only
         analysis_feature_manitude(args, net, preprocess, test_loader) 
         return 
@@ -186,7 +181,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
         out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
