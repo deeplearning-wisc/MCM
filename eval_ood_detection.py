@@ -22,11 +22,11 @@ def process_args():
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=100, type=int,
+    parser.add_argument('-b', '--batch-size', default=500, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #classifier loading
     parser.add_argument('--epoch', default ="40", type=str,
@@ -59,7 +59,7 @@ def process_args():
     parser.add_argument('--name', default = "test_mip", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=5, type=int,
+    parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
@@ -200,7 +200,7 @@ def main():
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else: # image as input 
-            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset']:
+            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, out_dataset, preprocess)
