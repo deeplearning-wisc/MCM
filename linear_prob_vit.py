@@ -13,41 +13,7 @@ from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
 from transformers import ViTFeatureExtractor,  ViTModel
 from utils import *
-
-def set_loader(args, preprocess = None):
-    root = args.root_dir
-    feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-    if preprocess == None:
-        normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
-                                        std=(0.5, 0.5, 0.5)) # for ViT
-        val_preprocess = transforms.Compose([
-            transforms.Resize(feature_extractor.size),
-            transforms.CenterCrop(feature_extractor.size),
-            transforms.ToTensor(),
-            normalize
-        ])
-        train_preprocess = transforms.Compose([
-            transforms.RandomResizedCrop(feature_extractor.size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize
-        ])
-        
-    kwargs = {'num_workers': 4, 'pin_memory': True}
-
-
-    if args.in_dataset == "ImageNet":
-        if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
-        elif args.server in ['galaxy-01', 'galaxy-02']:
-            path = os.path.join(root, 'ILSVRC-2012')
-        val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(path, "val"), transform=val_preprocess),
-                batch_size=args.batch_size, shuffle=False,  **kwargs)
-        train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(path, "train"), transform=train_preprocess),
-                batch_size=args.batch_size, shuffle=True, **kwargs)
-    return train_loader, val_loader
+from utils.vit_ops import set_loader_vit
 
 def set_up_logger(args):
     log = logging.getLogger(__name__)
@@ -264,7 +230,8 @@ def linear_probe_vit():
 
     log = set_up_logger(args)
     featurizer, classifier = set_model(args)
-    train_loader, val_loader = set_loader(args)
+    train_loader = set_train_loader_vit(args)
+    val_loader = set_val_loader_vit(args)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = set_optimizer(args, classifier)
 
