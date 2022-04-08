@@ -522,7 +522,7 @@ def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, genera
 
         return concat(_score).copy()
 
-def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, softmax = True, generate = False, template_dir = 'img_templates'):
+def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, softmax = True, generate = True, template_dir = 'img_templates'):
     if generate: 
         image_templates = get_mean(args, net, preprocess)
     else: 
