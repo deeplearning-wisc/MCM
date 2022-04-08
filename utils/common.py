@@ -120,10 +120,10 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
                 features = model(pixel_values = images.to(args.device)).last_hidden_state[:, 0, :]
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
-            all_features.append(features)
+            all_features.append(features.cpu())
             all_labels.append(labels)
     if to_np:
-        all_features = torch.cat(all_features).cpu().numpy()
+        all_features = torch.cat(all_features).numpy()
         all_labels = torch.cat(all_labels).cpu().numpy()
         with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{dataset}_{args.max_count}_{args.normalize}.npy'), 'wb') as f:
             np.save(f, all_features)
