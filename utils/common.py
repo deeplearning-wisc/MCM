@@ -114,7 +114,10 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
     all_labels = []
     with torch.no_grad():
         for images, labels in tqdm(dataloader):
-            features = model.encode_image(images.to(args.device))
+            if args.model == 'CLIP':
+                features = model.encode_image(images.to(args.device))
+            elif args.model == 'vit':
+                features = model(pixel_values = images.to(args.device)).last_hidden_state[:, 0, :]
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
             all_features.append(features)
