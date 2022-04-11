@@ -580,7 +580,7 @@ def get_retrival_scores_clip(args, net, text_df, preprocess, num_per_cls, genera
 
         return concat(_score).copy()
 
-def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, softmax = True, generate = True, template_dir = 'img_templates'):
+def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, softmax = True, generate = False, template_dir = 'img_templates', dataset_name=None, in_dist=False):
     if generate: 
         image_templates = get_mean(args, net, preprocess)
     else: 
@@ -592,16 +592,39 @@ def get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess,
     text_inputs =torch.cat([clip.tokenize(sent) for sent in text_df["caption"]]).cuda()
     text_dataset = TextDataset(text_inputs, text_df["cls"])
     text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
-    tqdm_object = tqdm(text_loader, total=len(text_loader)) 
-    with torch.no_grad():  
+    tqdm_object = tqdm(text_loader, total=len(text_loader))
+
+    act = []
+    with torch.no_grad():
         for batch_idx, (texts, labels) in enumerate(tqdm_object):
             text_features = net.encode_text(texts)
             text_features /= text_features.norm(dim=-1, keepdim=True)   
             output = text_features @ image_templates.T
+            smax = to_np(output)
+            act.append(smax)
             if softmax:
                 smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1))
+        
+            _right_score = []
+            _wrong_score = []
+            # if in_dist:
+            #     preds = np.argmax(smax, axis=1)
+            #     targets = labels.cpu().numpy().squeeze()
+            #     right_indices = preds == targets
+            #     wrong_indices = np.invert(right_indices)
+
+            #     _right_score.append(-np.max(smax[right_indices], axis=1))
+            #     _wrong_score.append(-np.max(smax[wrong_indices], axis=1))
+    torch.save(act, f'img_templates/{args.score}_activations_{dataset_name}.pt')
+    # return concat(_score).copy()
+    if in_dist:
+        print('accuracy not working yet')
+        # return concat(_score).copy(), concat(_right_score).copy(), concat(_wrong_score).copy()
+        return concat(_score).copy(), [1], [1]
+    else:
         return concat(_score).copy()
+    
 
 def analysis_feature_manitude(args, net, preprocess, id_loader):
     args.normalize = False
@@ -774,10 +797,11 @@ def get_mean(args, net, preprocess, mean_dir = 'img_templates'):
     '''
     used for Maha score. calculate class-wise mean only
     '''
+    print(args.n_cls)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    feat_dim = 512
+    # feat_dim = 512
     # classwise_features = [torch.empty(0,feat_dim) for i in range(args.n_cls)]
-    classwise_mean = torch.empty(args.n_cls, feat_dim)
+    classwise_mean = torch.empty(args.n_cls, args.feat_dim)
     classwise_features = []
     for _ in range(args.n_cls):
        classwise_features.append([]) 

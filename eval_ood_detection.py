@@ -150,14 +150,17 @@ def main():
     if args.score in ['MIPCI', 'MIPCT', 'retrival']:
         test_labels = get_test_labels(args)
         captions_dir = 'gen_captions'
-        text_df = prepare_dataframe(captions_dir, dataset_name = 'imagenet_val') # currently only supports ImageNet10 captions
+        text_df = prepare_dataframe(captions_dir, dataset_name = 'ImageNet10') # currently only supports ImageNet10 captions
         if args.score == 'MIPCT':
             in_score = get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True)
         elif args.score == 'MIPCI':
-            in_score = get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess)
+            in_score, right_score, wrong_score = get_retrival_scores_from_classwise_mean_clip(args, net, text_df, preprocess, dataset_name='ImageNet10', in_dist=True)
         elif args.score == 'retrival':
             in_score = get_retrival_scores_clip(args, net, text_df, 12, num_per_cls = 10, generate = False, template_dir = 'img_templates')
-
+        if right_score != None and wrong_score != None:
+            num_right = len(right_score)
+            num_wrong = len(wrong_score)
+            log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
     else:
         if args.score in ['Maha', 'knn', 'fingerprint'] and args.in_dataset in ['ImageNet']:
             args.subset = True
@@ -216,7 +219,7 @@ def main():
             out_score = get_MIPC_scores_clip(args, net, ood_text_df, test_labels)
         elif args.score == 'MIPCI':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset)
-            out_score = get_retrival_scores_from_classwise_mean_clip(args, net, ood_text_df, preprocess)
+            out_score = get_retrival_scores_from_classwise_mean_clip(args, net, ood_text_df, preprocess, dataset_name=out_dataset)
         elif args.score == 'retrival':
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
