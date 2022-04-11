@@ -88,7 +88,7 @@ def get_num_cls(args):
         'car196':196, 'bird200':200,
         'ImageNet': 1000,
     }
-    if 'ImageNet-subset':
+    if args.in_dataset == 'ImageNet-subset':
         n_cls = args.num_imagenet_cls
     else:
         n_cls = NUM_CLS_DICT[args.in_dataset]
