@@ -23,24 +23,24 @@ def process_args():
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=500, type=int,
+    parser.add_argument('-b', '--batch-size', default=1, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='vit', choices = ['CLIP','CLIP-Linear', 'vit'], type=str, help='model architecture')
+    parser.add_argument('--model', default='vit-Linear', choices = ['CLIP','CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #[linear prob clip] classifier loading
     parser.add_argument('--epoch', default ="40", type=str,
                              help='which epoch to test')
-    parser.add_argument('--classifier_ckpt', default ="ImageNet_ViT-L-14_lr_0.1_decay_0_bsz_512_test_03_warm", type=str,
+    parser.add_argument('--classifier_ckpt', default ="ImageNet_google_vit-base-patch16-224-in21k_lr_0.1_decay_0_bsz_512_test_correctness_warm", type=str,
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='Maha', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MSP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
-                                                                        'MIPCT', 'MIPCI', 'retrival' # text->img encoder; feature space
+                                                                        'MIPCT', 'MIPCI', 'retrival', 'noun' # text->img encoder; feature space
                                                                         ], help='score options')  
     # for knn score 
     parser.add_argument('--K', default = 10, type =int, help = "# of nearest neighbor")
@@ -49,7 +49,7 @@ def process_args():
     parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = '/nobackup/img_templates', help='the loc of stored classwise mean and precision matrix')
     parser.add_argument('--subset', default = False, type =bool, help = "whether uses a subset of samples in the training set")
-    parser.add_argument('--max_count', default = 800, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
+    parser.add_argument('--max_count', default = 100, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
     parser.add_argument('--T', default = 1, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
@@ -58,10 +58,10 @@ def process_args():
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "test_maha_memory_leakage", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = 'galaxy-01', type =str, 
+    parser.add_argument('--name', default = "vit_linear_debug", type =str, help = "unique ID for the run")    
+    parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=6, type=int,
+    parser.add_argument('--gpu', default=0, type=int,
                         help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
@@ -126,9 +126,27 @@ def main():
         classifier.eval()
     elif args.model == 'vit':
         net, preprocess = set_model_vit()
-
-
+    elif args.model == 'vit-Linear':
+        net, preprocess = set_model_vit()
+        args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
+        linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
+        classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
+        classifier.load_state_dict(linear_probe_dict)
+        classifier.cuda()
+        classifier.eval()
     net.eval()
+
+    if args.in_dataset == 'CIFAR-10':
+        log.debug('\nUsing CIFAR-10 as typical data') 
+        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-100']
+    elif args.in_dataset == 'CIFAR-100': 
+        log.debug('\nUsing CIFAR-100 as typical data')
+        # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
+        out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
+        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+        # out_datasets =  ['places365', 'dtd', 'iNaturalist']
+
     if args.score in ['MIPCI', 'MIPCT', 'retrival']:
         test_labels = get_test_labels(args)
         captions_dir = 'gen_captions'
@@ -146,10 +164,10 @@ def main():
     else:
         if args.score in ['Maha', 'knn', 'fingerprint'] and args.in_dataset in ['ImageNet']:
             args.subset = True
-        if args.model == 'CLIP':
+        if args.model in ['CLIP', 'CLIP-Linear']:
             test_loader = set_val_loader(args, preprocess)
             train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
-        elif args.model == 'vit':
+        elif args.model in ['vit', 'vit-Linear']:
             test_loader = set_val_loader_vit(args, preprocess)
             train_loader = set_train_loader_vit(args, preprocess, subset = args.subset) # used for KNN and Maha score
             
@@ -157,8 +175,11 @@ def main():
     if args.score == 'analyze': # analyze the unnormalized feature magnitude; for debug and analysis only
         analysis_feature_manitude(args, net, preprocess, test_loader) 
         return 
+    
+    elif args.score == 'nouns':
+        in_score = get_nouns_scores_clip(args, preprocess, net, test_loader, list(test_labels), args.in_dataset, captions_nouns_dir = 'captions_nouns')
 
-    if args.score in ['MIP', 'MIP_topk', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
+    elif args.score in ['MIP', 'MIP_topk', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP': # MIP and variants
@@ -184,19 +205,9 @@ def main():
 
         classwise_mean = torch.load(os.path.join(args.template_dir,f'{args.model}_classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
         precision = torch.load(os.path.join(args.template_dir,f'{args.model}_precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
-        args.normalize = True
+        # args.normalize = True
         in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
 
-    if args.in_dataset == 'CIFAR-10':
-        log.debug('\nUsing CIFAR-10 as typical data') 
-        out_datasets = ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-100']
-    elif args.in_dataset == 'CIFAR-100': 
-        log.debug('\nUsing CIFAR-100 as typical data')
-        # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
-        out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
-        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
-        # out_datasets =  ['places365', 'dtd', 'iNaturalist']
     log.debug('\n\nError Detection')
 
     auroc_list, aupr_list, fpr_list = [], [], []
@@ -216,9 +227,10 @@ def main():
             if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             else: #for CIFAR
-                ood_loader = set_ood_loader(args, out_dataset, preprocess)
-
-            if args.score == 'knn':
+                ood_loader = set_ood_loader(args, preprocess, out_dataset, preprocess)
+            if args.score == 'nouns':
+                out_score = get_nouns_scores_clip(args, preprocess, net, ood_loader, list(test_labels), out_dataset, captions_nouns_dir = 'captions_nouns', in_dist = False)
+            elif args.score == 'knn':
                 out_score = get_knn_scores_from_img_encoder_ood(args, net, ood_loader,out_dataset, index_bad)
             elif args.score == 'fingerprint':
                 out_score = get_fp_scores_from_clip_ood(args, net, test_labels, ood_loader, out_dataset, index_bad)

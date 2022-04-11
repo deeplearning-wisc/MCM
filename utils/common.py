@@ -52,16 +52,18 @@ def obtain_ImageNet10_classes(loc = None):
 def obtain_ImageNet100_classes(loc):
     # sort by values
     with open(os.path.join(loc, 'train_100.txt')) as f:
-        class_set = {line.split('/')[1].strip() for line in f.readlines()}
+        class_set = list({line.split('/')[1].strip() for line in f.readlines()})
+        class_set.sort()
 
     class_name_set = []
     with open('data/ImageNet/imagenet_class_index.json') as file: 
         class_index_raw = json.load(file)
         class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
+        # class_index =  {k: v for k, v in sorted(class_index.items(), key=lambda item: item[0])}
         class_name_set = [class_index[c] for c in class_set]
+        # class_name_set = class_index.values()
 
     class_name_set = [x.replace('_', ' ') for x in class_name_set]
-
     return class_name_set
 
 def obtain_ImageNet_subset_classes(loc):
@@ -120,10 +122,10 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
                 features = model(pixel_values = images.to(args.device)).last_hidden_state[:, 0, :]
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
-            all_features.append(features)
+            all_features.append(features.cpu())
             all_labels.append(labels)
     if to_np:
-        all_features = torch.cat(all_features).cpu().numpy()
+        all_features = torch.cat(all_features).numpy()
         all_labels = torch.cat(all_labels).cpu().numpy()
         with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{dataset}_{args.max_count}_{args.normalize}.npy'), 'wb') as f:
             np.save(f, all_features)
