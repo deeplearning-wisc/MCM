@@ -12,6 +12,7 @@ from torchvision.transforms import transforms
 import torch.nn.functional as F
 import faiss
 import scipy
+import matplotlib.pyplot as plt
 from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
@@ -473,6 +474,51 @@ def get_MIPC_scores_clip(args, net, text_df, test_labels, in_dist=True):
             smax = to_np(F.softmax(output/ args.T, dim=1))
             _score.append(-np.max(smax, axis=1)) 
         return concat(_score).copy()
+
+def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, dataset_name, captions_nouns_dir = 'captions_nouns', in_dist = True):
+    '''
+    used for nouns score. 1 - sum_{i \in K} p(\hat{y}=i|x)
+    '''
+    import pandas as pd
+    to_np = lambda x: x.data.cpu().numpy()
+    concat = lambda x: np.concatenate(x, axis=0)
+    _score = []
+    captions_nouns_path = os.path.join(captions_nouns_dir, f'{dataset_name}_clipcap_captions_and_nouns.csv')
+    df = pd.read_csv(f"{captions_nouns_path}", sep=',', converters={'Nouns': pd.eval})
+    # text_dataset = TextDataset(df["Nouns"], df["Type"])
+    # text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
+    bz = image_loader.batch_size
+    with torch.no_grad():
+        for i, (images, labels) in enumerate(tqdm(image_loader)):
+            
+            # if not in_dist:
+            #     mean = torch.tensor(preprocess.transforms[-1].mean)
+            #     std = torch.tensor(preprocess.transforms[-1].std)
+            #     recovered_img = images[0]*std[:,None, None] + mean[:, None, None]
+            #     plt.imsave(f'test_{i}.png', np.transpose(recovered_img.numpy(), (1,2,0)))
+
+            if i >= 2000  // args.batch_size and in_dist is False:
+                break
+            generated_labels = df["Nouns"][i*bz: (i+1)*bz]
+            all_labels = ID_labels + list(generated_labels)[0]
+            text_features = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in all_labels]).cuda()).float()
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+            
+            images = images.cuda()
+            image_features = net.encode_image(images).float()
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+
+            output = image_features @ text_features.T
+
+            smax = to_np(F.softmax(output *100, dim=1))
+           # if not in_dist:
+                # print(np.around(smax,3))
+                # print(1 -np.sum(smax[: args.n_cls], axis=1))
+            score = 1 -np.sum(smax[0, : args.n_cls])
+            # print(score)
+            _score.append(score) 
+
+        return np.array(_score)
 
 def generate_img_template(args, net, preprocess, num_per_cls, template_dir):
     from collections import defaultdict

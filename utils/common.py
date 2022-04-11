@@ -52,16 +52,18 @@ def obtain_ImageNet10_classes(loc = None):
 def obtain_ImageNet100_classes(loc):
     # sort by values
     with open(os.path.join(loc, 'train_100.txt')) as f:
-        class_set = {line.split('/')[1].strip() for line in f.readlines()}
+        class_set = list({line.split('/')[1].strip() for line in f.readlines()})
+        class_set.sort()
 
     class_name_set = []
     with open('data/ImageNet/imagenet_class_index.json') as file: 
         class_index_raw = json.load(file)
         class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
+        # class_index =  {k: v for k, v in sorted(class_index.items(), key=lambda item: item[0])}
         class_name_set = [class_index[c] for c in class_set]
+        # class_name_set = class_index.values()
 
     class_name_set = [x.replace('_', ' ') for x in class_name_set]
-
     return class_name_set
 
 def obtain_ImageNet_subset_classes(loc):
@@ -88,7 +90,7 @@ def get_num_cls(args):
         'car196':196, 'bird200':200,
         'ImageNet': 1000,
     }
-    if 'ImageNet-subset':
+    if args.in_dataset == 'ImageNet-subset':
         n_cls = args.num_imagenet_cls
     else:
         n_cls = NUM_CLS_DICT[args.in_dataset]
