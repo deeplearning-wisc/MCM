@@ -1,4 +1,4 @@
-# Project Structure
+# Project Structure (to be updated)
 Out-of-distribution with language supervision
 
 - `play_with_clip.py`: ID zero-shot classification and ID fine-tuning (with img encoder). Currently we have three options: 
