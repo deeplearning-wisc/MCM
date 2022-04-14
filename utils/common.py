@@ -83,7 +83,7 @@ def obtain_ImageNet_subset_classes(loc):
 
 def obtain_ImageNet_dogs_classes(args, loc):
     # sort by values
-    with open(os.path.join(loc, 'class_list.txt')) as f:
+    with open(os.path.join(loc, f'in_{args.n_cls}_seed_{args.seed}', 'class_list.txt')) as f:
         class_set = [line.strip() for line in f.readlines()[0:args.num_imagenet_cls]]
 
     class_name_set = []

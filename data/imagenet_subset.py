@@ -60,12 +60,12 @@ class ImageNetDogs(Dataset):
             for image_id in os.listdir(os.path.join(root, self.split, cls))]
         print(f'ImageNet {self.split} dog subset with {len(self.class_list)}/{len(class_list)} classes, {len(self.data)} samples')
 
-        # if save:
-        #     save_path = os.path.join(class_list_loc, f'ImageNet{n_cls}', id)
-        #     if not os.path.exists(save_path):
-        #         os.makedirs(save_path)
-        #     with open(os.path.join(save_path, 'class_list.txt'), 'w+') as f:
-        #         f.writelines([line + '\n' for line in self.class_list])
+        if save:
+            save_path = os.path.join(class_list_loc, f'in_{n_cls}_seed_{seed}')
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            with open(os.path.join(save_path, 'class_list.txt'), 'w+') as f:
+                f.writelines([line + '\n' for line in self.class_list])
 
     def __len__(self):
         return len(self.data)

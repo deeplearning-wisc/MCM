@@ -189,7 +189,6 @@ def main():
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP': # MIP and variants
-            print(test_labels)
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
