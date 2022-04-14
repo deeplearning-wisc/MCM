@@ -74,7 +74,7 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
-                                            shuffle=False, num_workers=0)
+                                            shuffle=False, num_workers=4)
     return testloaderOut
 
 def print_measures(log, auroc, aupr, fpr, method_name='Ours', recall_level=0.95):
@@ -214,7 +214,11 @@ def get_ood_scores(args, net, loader, in_dist=False):
 
 def input_preprocessing(args, net, images, text_features = None, classifier = None):
     criterion = torch.nn.CrossEntropyLoss()
-    image_features = net.encode_image(images).float()
+    if args.model == 'vit-Linear':
+        image_features = net(pixel_values = images.float()).last_hidden_state
+        image_features = image_features[:, 0, :]
+    elif args.model == 'CLIP-Linear':
+        image_features = net.encode_image(images).float()
     if classifier:
         outputs = classifier(image_features) / args.T
     else: 
@@ -259,7 +263,11 @@ def get_ood_scores_clip_odin(args, net, loader, test_labels, classifier = None, 
         images = input_preprocessing(args, net, images, text_features, classifier)
 
         with torch.no_grad():
-            image_features = net.encode_image(images).float()
+            if args.model == 'vit-Linear':
+                image_features = net(pixel_values = images.float()).last_hidden_state
+                image_features = image_features[:, 0, :].detach()
+            elif args.model == 'CLIP-Linear':
+                image_features = net.encode_image(images).float()
             if classifier: 
                 if args.normalize: 
                     image_features /= image_features.norm(dim=-1, keepdim=True)  
@@ -425,7 +433,11 @@ def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
                 break
             labels = labels.long().cuda()
             images = images.cuda()
-            image_features = net.encode_image(images).float()
+            if args.model == 'CLIP-Linear':
+                image_features = net.encode_image(images).float()
+            elif args.model == 'vit-Linear':
+                image_features = net(pixel_values = images.float()).last_hidden_state
+                image_features = image_features[:, 0, :].detach()
             if args.normalize: 
                 image_features /= image_features.norm(dim=-1, keepdim=True)  
             output = classifier(image_features)

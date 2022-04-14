@@ -18,7 +18,7 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #dataset
-    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
@@ -26,7 +26,7 @@ def process_args():
     parser.add_argument('-b', '--batch-size', default=1, type=int,
                             help='mini-batch size; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='vit-Linear', choices = ['CLIP','CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #[linear prob clip] classifier loading
@@ -36,11 +36,11 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='MSP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='nouns', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
-                                                                        'MIPCT', 'MIPCI', 'retrival', 'noun' # text->img encoder; feature space
+                                                                        'MIPCT', 'MIPCI', 'retrival', 'nouns' # text->img encoder; feature space
                                                                         ], help='score options')  
     # for knn score 
     parser.add_argument('--K', default = 10, type =int, help = "# of nearest neighbor")
@@ -52,7 +52,7 @@ def process_args():
     parser.add_argument('--max_count', default = 100, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
     parser.add_argument('--T', default = 1, type =float, help = "temperature") 
-    parser.add_argument('--noiseMagnitude', default = 0.000, type =float, help = "noise maganitute for inputs") 
+    parser.add_argument('--noiseMagnitude', default = 0.001, type =float, help = "noise maganitute for inputs") 
     # for fingerprint score 
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
     #Misc 
@@ -144,7 +144,7 @@ def main():
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
-        out_datasets =  ['places365','SUN', 'dtd', 'iNaturalist']
+        out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
 
     if args.score in ['MIPCI', 'MIPCT', 'retrival']:
@@ -184,7 +184,7 @@ def main():
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP': # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model == 'CLIP-Linear': # after linear probe; img encoder -> logit space
+        elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
                 in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, classifier, in_dist=True)
             else: # energy_logits and MSP
@@ -241,7 +241,7 @@ def main():
             else: # non knn scores
                 if args.model == 'CLIP':
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
-                elif args.model == 'CLIP-Linear':
+                elif args.model in ['CLIP-Linear', 'vit-Linear']:
                     if args.score == 'odin_logits':
                         out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, classifier)
                     else: 
