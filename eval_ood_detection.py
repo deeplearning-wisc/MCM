@@ -6,7 +6,7 @@ import clip
 from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed, get_num_cls
+from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_dogs_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed, get_num_cls
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -20,7 +20,7 @@ def process_args():
     #dataset
     parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
-                        'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',
+                        'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
     parser.add_argument('-b', '--batch-size', default=1, type=int,
@@ -80,6 +80,8 @@ def process_args():
 
     if args.in_dataset == 'ImageNet-subset':
         args.log_directory = f"results/ImageNet{args.num_imagenet_cls}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
+    if args.in_dataset == 'ImageNet-dogs':
+        args.log_directory = f"results/ImageNetDogs_{args.num_imagenet_cls}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     else:
         args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     os.makedirs(args.log_directory, exist_ok= True)
@@ -97,6 +99,8 @@ def get_test_labels(args, loader = None):
         test_labels = obtain_ImageNet100_classes(loc = os.path.join('./data', 'ImageNet100'))
     elif args.in_dataset == "ImageNet-subset":
         test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}', args.name))
+    elif args.in_dataset == 'ImageNet-dogs':
+        test_labels = obtain_ImageNet_dogs_classes(args, loc = os.path.join('./data', 'ImageNetDogs'))
     elif args.in_dataset in ['bird200', 'car196','flower102','food101','pet37']:
         test_labels = loader.dataset.class_names_str
     return test_labels
@@ -146,6 +150,8 @@ def main():
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
         out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
         # out_datasets =  ['places365', 'dtd', 'iNaturalist']
+    elif args.in_dataset == 'ImageNet-dogs':
+        out_datasets = ['ImageNetDogs']
 
     if args.score in ['MIPCI', 'MIPCT', 'retrival']:
         test_labels = get_test_labels(args)
@@ -183,6 +189,7 @@ def main():
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model == 'CLIP': # MIP and variants
+            print(test_labels)
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
@@ -226,6 +233,8 @@ def main():
         else: # image as input 
             if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
+            if args.in_dataset == 'ImageNet-dogs':
+                ood_loader = set_ood_loader_ImageNet_dogs(args, preprocess)
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, preprocess, out_dataset, preprocess)
             if args.score == 'nouns':
