@@ -76,7 +76,6 @@ def obtain_ImageNet_subset_classes(loc):
         class_index_raw = json.load(file)
         class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
         class_name_set = [class_index[c] for c in class_set]
-    print(len(class_name_set))
     class_name_set = [x.replace('_', ' ') for x in class_name_set]
 
     return class_name_set
@@ -91,7 +90,6 @@ def obtain_ImageNet_dogs_classes(args, loc):
         class_index_raw = json.load(file)
         class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
         class_name_set = [class_index[c] for c in class_set]
-    print(len(class_name_set))
     class_name_set = [x.replace('_', ' ') for x in class_name_set]
 
     return class_name_set
