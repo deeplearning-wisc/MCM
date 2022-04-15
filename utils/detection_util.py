@@ -5,6 +5,7 @@ from tqdm import tqdm
 import clip
 import torchvision
 import sklearn.metrics as sk
+from data.imagenet_subset import ImageNetDogs
 from utils.common import get_features, get_fingerprint
 from utils.plot_util import plot_distribution
 import utils.svhn_loader as svhn
@@ -76,6 +77,17 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
                                             shuffle=False, num_workers=4)
     return testloaderOut
+
+def set_ood_loader_ImageNet_dogs(args, preprocess):
+    if args.server in ['inst-01', 'inst-04']:
+        path = os.path.join('/nobackup','ImageNet')
+    elif args.server in ['galaxy-01', 'galaxy-02']:
+        path = os.path.join(args.root_dir, 'ILSVRC-2012')
+    kwargs = {'num_workers': 4, 'pin_memory': True}
+    dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False, in_dist=False)
+    ood_loader = torch.utils.data.DataLoader(dataset,
+            batch_size=args.batch_size, shuffle=False, **kwargs)
+    return ood_loader
 
 def print_measures(log, auroc, aupr, fpr, method_name='Ours', recall_level=0.95):
     if log == None: 

@@ -81,6 +81,21 @@ def obtain_ImageNet_subset_classes(loc):
 
     return class_name_set
 
+def obtain_ImageNet_dogs_classes(args, loc):
+    # sort by values
+    with open(os.path.join(loc, f'in_{args.n_cls}_seed_{args.seed}', 'class_list.txt')) as f:
+        class_set = [line.strip() for line in f.readlines()[0:args.num_imagenet_cls]]
+
+    class_name_set = []
+    with open('data/ImageNet/imagenet_class_index.json') as file: 
+        class_index_raw = json.load(file)
+        class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
+        class_name_set = [class_index[c] for c in class_set]
+    print(len(class_name_set))
+    class_name_set = [x.replace('_', ' ') for x in class_name_set]
+
+    return class_name_set
+
 def get_num_cls(args):    
     NUM_CLS_DICT = {
         'CIFAR-10': 10, 'ImageNet10': 10,
@@ -90,7 +105,7 @@ def get_num_cls(args):
         'car196':196, 'bird200':200,
         'ImageNet': 1000,
     }
-    if args.in_dataset == 'ImageNet-subset':
+    if args.in_dataset in ['ImageNet-subset', 'ImageNet-dogs']:
         n_cls = args.num_imagenet_cls
     else:
         n_cls = NUM_CLS_DICT[args.in_dataset]
