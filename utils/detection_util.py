@@ -503,16 +503,17 @@ def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, datase
     with torch.no_grad():
         for i, (images, labels) in enumerate(tqdm(image_loader)):
             
-            # if not in_dist:
-            #     mean = torch.tensor(preprocess.transforms[-1].mean)
-            #     std = torch.tensor(preprocess.transforms[-1].std)
-            #     recovered_img = images[0]*std[:,None, None] + mean[:, None, None]
-            #     plt.imsave(f'test_{i}.png', np.transpose(recovered_img.numpy(), (1,2,0)))
+            #if not in_dist:
+            mean = torch.tensor(preprocess.transforms[-1].mean)
+            std = torch.tensor(preprocess.transforms[-1].std)
+            recovered_img = images[0]*std[:,None, None] + mean[:, None, None]
+            plt.imsave(f'test_{i}.png', np.transpose(recovered_img.numpy(), (1,2,0)))
 
             if i >= 2000  // args.batch_size and in_dist is False:
                 break
-            generated_labels = df["Nouns"][i*bz: (i+1)*bz]
-            all_labels = ID_labels + list(generated_labels)[0]
+            generated_labels = list(df["Nouns"][i*bz: (i+1)*bz])[0]
+            generated_labels = [label for label in generated_labels if label not in ID_labels ]
+            all_labels = ID_labels + generated_labels
             text_features = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in all_labels]).cuda()).float()
             text_features /= text_features.norm(dim=-1, keepdim=True)
             
