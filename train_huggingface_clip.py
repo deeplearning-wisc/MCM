@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils.common import AverageMeter
 from utils.coco_dataset import build_coco_loader
+from utils.dogs_dataset import build_dogs_loader
 
 logging.set_verbosity_warning()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -60,6 +61,10 @@ def get_params(description = 'Training clip'):
         params.image_dir = '/nobackup/COCO/COCO-14'
         params.save_dir = f'/nobackup/checkpoints/clip/{params.dataset}'
         params.batch_size = 64
+    elif params.server in ['galaxy-01']:
+        params.image_dir = '/nobackup-slow/dataset/ILSVRC-2012'
+        params.save_dir = f'/nobackup/zcai/checkpoints/clip/{params.dataset}' # /nobackup/checkpoints throwing permission denied error
+        params.batch_size = 64
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
     os.makedirs(params.save_dir, exist_ok=True)
     params.device = torch.device("cuda:1") if torch.cuda.is_available() else torch.device('cpu')
@@ -106,7 +111,12 @@ def train_epoch(model, tokenizer, train_loader, optimizer, global_step):
         
 def train(params, model, tokenizer, logf, writer):
     print("Training model")
-    train_loader= build_coco_loader(params, option = 'train')
+    if params.dataset == 'COCO':
+        train_loader= build_coco_loader(params, option = 'train')
+    else:
+        train_loader=build_dogs_loader(params, option='train')
+    assert train_loader is not None, 'train loader is None'
+
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=params.lr, weight_decay=params.weight_decay
     )

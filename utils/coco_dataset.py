@@ -37,7 +37,6 @@ def build_coco_loader(params, option = 'train'):
     coco_loader = build_image_loader(params, df, image_path, option)
     return coco_loader
 
-
 class CLIPDataset_ViT(torch.utils.data.Dataset):
     def __init__(self, params, image_filenames, captions):
         """
