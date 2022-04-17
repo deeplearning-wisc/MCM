@@ -11,7 +11,7 @@ from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
 from utils.train_eval_util import set_model, set_train_loader, set_val_loader
-from utils.vit_ops import set_model_vit, set_train_loader_vit, set_val_loader_vit
+from utils.vit_ops import set_model_clip, set_model_vit, set_train_loader_vit, set_val_loader_vit
 # sys.path.append(os.path.dirname(__file__))
 
 def process_args():
@@ -31,7 +31,7 @@ def process_args():
     parser.add_argument('-b', '--batch-size', default=512, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #[linear prob clip] classifier loading
@@ -129,6 +129,8 @@ def main():
         classifier.load_state_dict(linear_probe_dict)
         classifier.cuda()
         classifier.eval()
+    elif args.model == 'H-CLIP':
+        net, preprocess = set_model_clip(args)
     elif args.model == 'vit':
         net, preprocess = set_model_vit()
     elif args.model == 'vit-Linear':
@@ -172,7 +174,7 @@ def main():
     else:
         if args.score in ['Maha', 'knn', 'fingerprint'] and args.in_dataset in ['ImageNet']:
             args.subset = True
-        if args.model in ['CLIP', 'CLIP-Linear']:
+        if args.model in ['CLIP', 'CLIP-Linear', 'H-CLIP']:
             test_loader = set_val_loader(args, preprocess)
             train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
         elif args.model in ['vit', 'vit-Linear']:
@@ -190,7 +192,7 @@ def main():
     elif args.score in ['MIP', 'MIP_topk', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model == 'CLIP': # MIP and variants
+        elif args.model == ['CLIP', 'H-CLIP']: # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
