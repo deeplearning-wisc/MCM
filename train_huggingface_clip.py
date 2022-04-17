@@ -1,6 +1,7 @@
 
 from genericpath import exists
 import os
+from numpy import count_nonzero
 from tqdm import tqdm
 import torch
 import argparse
@@ -11,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils.common import AverageMeter
 from utils.coco_dataset import build_coco_loader
-from utils.dogs_dataset import build_dogs_loader
+from utils.dogs_dataset import build_dogs_loader, get_dogs_cls, labels_from_wordnet_ids
 
 logging.set_verbosity_warning()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -64,10 +65,10 @@ def get_params(description = 'Training clip'):
     elif params.server in ['galaxy-01']:
         params.image_dir = '/nobackup-slow/dataset/ILSVRC-2012'
         params.save_dir = f'/nobackup/zcai/checkpoints/clip/{params.dataset}' # /nobackup/checkpoints throwing permission denied error
-        params.batch_size = 64
+        params.batch_size = 128
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
     os.makedirs(params.save_dir, exist_ok=True)
-    params.device = torch.device("cuda:1") if torch.cuda.is_available() else torch.device('cpu')
+    params.device = torch.device("cuda:5") if torch.cuda.is_available() else torch.device('cpu')
     return params
 
 def get_lr(optimizer):
@@ -92,6 +93,7 @@ def train_epoch(model, tokenizer, train_loader, optimizer, global_step):
         batch['pixel_values'] = batch['pixel_values'].to(params.device)
         bz = batch["pixel_values"].size(0)
         batch.pop('caption')
+        batch.pop('targets')
         for k, v in text_tokens.items(): # add 'input_ids', 'attention_mask' to batch 
             batch[k] = torch.tensor(v).to(params.device)
         batch['return_loss'] = True
@@ -113,7 +115,7 @@ def train(params, model, tokenizer, logf, writer):
     print("Training model")
     if params.dataset == 'COCO':
         train_loader= build_coco_loader(params, option = 'train')
-    else:
+    elif params.dataset == 'ImageNet-dogs':
         train_loader=build_dogs_loader(params, option='train')
     assert train_loader is not None, 'train loader is None'
 
@@ -132,13 +134,15 @@ def train(params, model, tokenizer, logf, writer):
     # lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0002, max_lr=0.002,step_size_up=5,mode="triangular")
     best_loss = float('inf')
     global_step = 0
+    with torch.no_grad():
+        valid_loss, acc = valid_epoch(params, model, tokenizer, global_step)
     for epoch in range(params.epochs):
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss, global_step = train_epoch(model, tokenizer, train_loader, optimizer, global_step)
         model.eval()
         with torch.no_grad():
-            valid_loss = valid_epoch(params, model, tokenizer, global_step)
+            valid_loss, acc = valid_epoch(params, model, tokenizer, global_step)
         if valid_loss.avg < best_loss:
             params.model_path =  os.path.join(params.save_dir, f"best_{params.lang}.pt") 
             best_loss = valid_loss.avg
@@ -149,27 +153,53 @@ def train(params, model, tokenizer, logf, writer):
             torch.save(model.state_dict(), params.model_path)
             log_write(logf, f"Saved Model at epoch {epoch}")
         lr_scheduler.step(valid_loss.avg)
-        log_write(logf, "epoch {} train_loss: {:.4f} val_loss: {:.4f}".format(epoch, train_loss.avg, valid_loss.avg))
+        log_write(logf, "epoch {} train_loss: {:.4f} val_loss: {:.4f} acc {:.4f}".format(epoch, train_loss.avg, valid_loss.avg, acc))
     lr_scheduler.step()
 
 def valid_epoch(params, model, tokenizer, global_step):
     loss_meter = AverageMeter()
-    val_loader= build_coco_loader(params, option = 'val')
+    if params.dataset == 'COCO':
+        val_loader= build_coco_loader(params, option = 'val')
+    elif params.dataset == 'ImageNet-dogs':
+        val_loader=build_dogs_loader(params, option='val')
+    assert val_loader is not None, 'val loader is None'
+
+    wordnet_ids = get_dogs_cls()
+    labels = labels_from_wordnet_ids(wordnet_ids)
+    captions = [f'This is a photo of {l}' for l in labels]
+    cls_text_tks = tokenizer(captions, padding=True, truncation=True,max_length=params.max_length)
+
     tqdm_object = tqdm(val_loader, total=len(val_loader))
+    n_sample = 0
+    n_correct = 0
     with torch.no_grad():
         for batch in tqdm_object:
             text_tokens = tokenizer(batch['caption'], padding=True, truncation=True,max_length=params.max_length)
             batch['pixel_values'] = batch['pixel_values'].to(params.device)
             bz = batch["pixel_values"].size(0)
-            batch.pop('caption')
+            captions = batch.pop('caption')
+            targets = batch.pop('targets')
             for k, v in text_tokens.items():
                 batch[k] = torch.tensor(v).to(params.device)
             batch['return_loss'] = True
-            loss = model(**batch).loss
+            output = model(**batch)
+            loss = output.loss
             loss_meter.update(loss.item(), bz)
             tqdm_object.set_postfix(valid_loss=loss_meter.avg)
+
+            # eval accuracy
+            for k, v in cls_text_tks.items():
+                batch[k] = torch.tensor(v).to(params.device)
+            cls_text_output = model(**batch)
+            pred = torch.argmax(cls_text_output.logits_per_text, dim=0).cpu()
+            print(pred, targets)
+            n_correct = n_correct + count_nonzero(pred == targets)
+            n_sample = n_sample + bz
+
+    acc = n_correct/n_sample
     writer.add_scalar("test/loss", scalar_value=loss_meter.avg, global_step=global_step)
-    return loss_meter
+    writer.add_scalar("test/acc", scalar_value=acc, global_step=global_step)
+    return loss_meter, acc
 
 if __name__ == "__main__":
     params = get_params()

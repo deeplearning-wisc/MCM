@@ -38,7 +38,7 @@ def build_coco_loader(params, option = 'train'):
     return coco_loader
 
 class CLIPDataset_ViT(torch.utils.data.Dataset):
-    def __init__(self, params, image_filenames, captions):
+    def __init__(self, params, image_filenames, captions, targets):
         """
         image_filenames and cpations must have the same length; so, if there are
         multiple captions for each image, the image_filenames must have repetitive
@@ -48,6 +48,7 @@ class CLIPDataset_ViT(torch.utils.data.Dataset):
         self.image_filenames = image_filenames
         # self.feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k')
         self.feature_extractor  = CLIPProcessor.from_pretrained(params.ckpt)
+        self.targets = targets
 
     def __getitem__(self, idx):
         image = cv2.imread(self.image_filenames[idx]) 
@@ -58,6 +59,7 @@ class CLIPDataset_ViT(torch.utils.data.Dataset):
         item = {}
         item['pixel_values'] = inputs['pixel_values'][0]  # inputs['pixel_values'].shape: torch.Size([1, 3, 224, 224])
         item['caption'] = self.captions[idx]
+        item['targets'] = self.targets[idx]
         return item
 
 

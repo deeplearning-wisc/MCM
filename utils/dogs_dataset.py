@@ -13,13 +13,18 @@ def labels_from_wordnet_ids(wordnet_ids):
     return class_name_set
 
 def build_dogs_loader(params, option = 'train'):
+    wordnet_ids = get_dogs_cls()
+    labels = labels_from_wordnet_ids(wordnet_ids)
+    labels_by_wordnet_ids = {wordnet_ids[i]: labels[i] for i in range(len(wordnet_ids))}
+    image_filenames = [os.path.join(params.image_dir, option, cls_name, filename) for cls_name in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, cls_name))]
+    captions = [f'This is a photo of {labels_by_wordnet_ids[id]}' for id in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, id))]
+    targets = [i for i, id in enumerate(wordnet_ids) for filename in os.listdir(os.path.join(params.image_dir, option, id))]
+    dataset = CLIPDataset_ViT(params, image_filenames, captions, targets)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=params.batch_size, num_workers=params.num_workers, shuffle=(option == 'train'))
+    return dataloader
+
+def get_dogs_cls():
     cls_list_loc = './data/ImageNetDogs'
     with open(os.path.join(cls_list_loc, 'class_list.txt')) as f:
         wordnet_ids = [l.strip() for l in f.readlines()]
-    image_filenames = [os.path.join(params.image_dir, option, cls_name, filename) for cls_name in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, cls_name))]
-    labels = labels_from_wordnet_ids(wordnet_ids)
-    captions = [f'This is a photo of {l}' for l in labels]
-
-    dataset = CLIPDataset_ViT(params, image_filenames, captions)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=params.batch_size, num_workers=params.num_workers, shuffle=(option == 'train'))
-    return dataloader
+    return wordnet_ids
