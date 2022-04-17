@@ -63,7 +63,9 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     elif out_dataset == 'SUN':
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'SUN'), transform=preprocess)
     elif out_dataset == 'places365': # filtered places
-        testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)   
+        testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'Places'),transform=preprocess)  
+    elif out_dataset == 'placesbg': 
+        testsetout = torchvision.datasets.ImageFolder(root= os.path.join(root, 'placesbg'),transform=preprocess)  
     elif out_dataset == 'dtd':
         if args.server == 'galaxy-01':
             testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),

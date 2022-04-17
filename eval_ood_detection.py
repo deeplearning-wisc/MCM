@@ -17,14 +17,19 @@ from utils.vit_ops import set_model_vit, set_train_loader_vit, set_val_loader_vi
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    #dataset
-    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
+    #unique setting for each run
+    parser.add_argument('--in_dataset', default='bird200', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
+    parser.add_argument('--name', default = "vit_linear_debug", type =str, help = "unique ID for the run")    
+    parser.add_argument('--server', default = 'inst-01', type =str, 
+                choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
+    parser.add_argument('--gpu', default=0, type=int, help='the GPU indice to use')
+    # batch size. num of classes
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=1, type=int,
-                            help='mini-batch size; 75 for odin_logits; 512 for other scores [clip]')
+    parser.add_argument('-b', '--batch-size', default=512, type=int,
+                            help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
@@ -36,7 +41,7 @@ def process_args():
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='nouns', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
+    parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
@@ -58,11 +63,6 @@ def process_args():
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
-    parser.add_argument('--name', default = "vit_linear_debug", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = 'inst-01', type =str, 
-                choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=0, type=int,
-                        help='the GPU indice to use')
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
@@ -103,6 +103,7 @@ def get_test_labels(args, loader = None):
         test_labels = obtain_ImageNet_dogs_classes(args, loc = os.path.join('./data', 'ImageNetDogs'))
     elif args.in_dataset in ['bird200', 'car196','flower102','food101','pet37']:
         test_labels = loader.dataset.class_names_str
+    
     return test_labels
 
 
@@ -147,9 +148,10 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']: 
+    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
         out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
-        # out_datasets =  ['places365', 'dtd', 'iNaturalist']
+    elif args.in_dataset == 'bird200':
+        out_datasets = ['placesbg']
     elif args.in_dataset == 'ImageNet-dogs':
         out_datasets = ['ImageNetDogs']
 
@@ -232,7 +234,7 @@ def main():
         else: # image as input 
             if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
-            if args.in_dataset == 'ImageNet-dogs':
+            elif args.in_dataset == 'ImageNet-dogs':
                 ood_loader = set_ood_loader_ImageNet_dogs(args, preprocess)
             else: #for CIFAR
                 ood_loader = set_ood_loader(args, preprocess, out_dataset, preprocess)
