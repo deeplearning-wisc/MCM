@@ -34,6 +34,9 @@ def process_args():
     parser.add_argument('--model', default='H-CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
+    #fine-tune ckpt
+    parser.add_argument('--finetune_ckpt', default =None, type=str,
+                             help='ckpt location for fine-tuned clip')
     #[linear prob clip] classifier loading
     parser.add_argument('--epoch', default ="40", type=str,
                              help='which epoch to test')
