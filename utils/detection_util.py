@@ -18,6 +18,8 @@ from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
 
+from transformers import CLIPTokenizer, CLIPModel
+
 import umap
 
 def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'):
@@ -314,6 +316,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     _score = []
     _right_score = []
     _wrong_score = []
+    if args.model == 'H-CLIP':
+        tokenizer = CLIPTokenizer.from_pretrained(args.ckpt)
     multi_template= args.score == 'MIPT'
     #debug
     # fingerprints = []
@@ -336,7 +340,10 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             bz = images.size(0)
             labels = labels.long().cuda()
             images = images.cuda()
-            image_features = net.encode_image(images).float()
+            if args.model == 'CLIP':
+                image_features = net.encode_image(images).float()
+            elif args.model == 'H-CLIP':
+                image_features = net.get_image_features(pixel_values = images).float()
             image_features /= image_features.norm(dim=-1, keepdim=True)
             if multi_template:
                 if (args.template == 'full'):
@@ -382,8 +389,15 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 text_features_avg /= text_features_avg.norm(dim=-1, keepdim=True) 
                 output = image_features @ text_features_avg.T 
             else: # for MIP
-                text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
-                text_features = net.encode_text(text_inputs).float()
+                if args.model == 'CLIP':
+                    text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in test_labels]).cuda()
+                    text_features = net.encode_text(text_inputs).float()
+                elif args.model == 'H-CLIP':
+                    text_inputs = tokenizer([f"a photo of a {c}" for c in test_labels], padding=True, return_tensors="pt")
+                    # for k in text_inputs.keys():
+                    #     text_inputs[k] = text_inputs[k].cuda()
+                    text_features = net.get_text_features(input_ids = text_inputs['input_ids'].cuda(), 
+                                                    attention_mask = text_inputs['attention_mask'].cuda()).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
                 output = image_features @ text_features.T
                 if args.score == 'MIP_topk':

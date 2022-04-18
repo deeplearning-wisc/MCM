@@ -36,7 +36,8 @@ def set_model_clip(args):
     ckpt_mapping = {"ViT-B/16":"openai/clip-vit-base-patch16", 
                     "ViT-B/32":"openai/clip-vit-base-patch32",
                     "ViT-L/14":"openai/clip-vit-large-patch14"}
-    model =  CLIPModel.from_pretrained(ckpt_mapping[args.CLIP_ckpt]).cuda()
+    args.ckpt = ckpt_mapping[args.CLIP_ckpt]
+    model =  CLIPModel.from_pretrained(args.ckpt).cuda()
     normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), 
                                         std=(0.229, 0.224, 0.225)) # for ViT
     val_preprocess = transforms.Compose([

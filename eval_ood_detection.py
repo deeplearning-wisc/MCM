@@ -18,20 +18,20 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
-    parser.add_argument('--in_dataset', default='bird200', type=str, 
+    parser.add_argument('--in_dataset', default='food101', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "vit_linear_debug", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "h_clip_debug", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=0, type=int, help='the GPU indice to use')
     # batch size. num of classes
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=512, type=int,
+    parser.add_argument('-b', '--batch-size', default=64, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='H-CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #[linear prob clip] classifier loading
@@ -192,7 +192,7 @@ def main():
     elif args.score in ['MIP', 'MIP_topk', 'energy', 'entropy', 'MIPT', 'MSP', 'energy_logits', 'odin', 'odin_logits']:
         if args.score == 'odin': # featue space ODIN 
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model == ['CLIP', 'H-CLIP']: # MIP and variants
+        elif args.model in ['CLIP', 'H-CLIP']: # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
@@ -251,7 +251,7 @@ def main():
             elif args.score == 'odin':
                  out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, in_dist=False)
             else: # non knn scores
-                if args.model == 'CLIP':
+                if args.model in ['CLIP', 'H-CLIP']:
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
                 elif args.model in ['CLIP-Linear', 'vit-Linear']:
                     if args.score == 'odin_logits':
