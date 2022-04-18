@@ -17,7 +17,7 @@ def build_dogs_loader(params, option = 'train'):
     labels = labels_from_wordnet_ids(wordnet_ids)
     labels_by_wordnet_ids = {wordnet_ids[i]: labels[i] for i in range(len(wordnet_ids))}
     image_filenames = [os.path.join(params.image_dir, option, cls_name, filename) for cls_name in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, cls_name))]
-    captions = [f'This is a photo of {labels_by_wordnet_ids[id]}' for id in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, id))]
+    captions = [f'A photo of a {labels_by_wordnet_ids[id]}.' for id in wordnet_ids for filename in os.listdir(os.path.join(params.image_dir, option, id))]
     targets = [i for i, id in enumerate(wordnet_ids) for filename in os.listdir(os.path.join(params.image_dir, option, id))]
     dataset = CLIPDataset_ViT(params, image_filenames, captions, targets)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=params.batch_size, num_workers=params.num_workers, shuffle=(option == 'train'))
