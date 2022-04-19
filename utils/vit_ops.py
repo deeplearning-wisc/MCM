@@ -11,7 +11,7 @@ from torchvision import transforms, datasets
 from sklearn.utils import shuffle
 from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
-from transformers import ViTFeatureExtractor,  ViTModel,  CLIPModel
+# from transformers import ViTFeatureExtractor,  ViTModel,  CLIPModel
 
 def set_model_vit():
     '''

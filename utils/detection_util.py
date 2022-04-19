@@ -18,7 +18,7 @@ from scipy import stats
 from utils.train_eval_util import set_train_loader
 from utils.imagenet_templates import openai_imagenet_template, openai_imagenet_template_subset
 
-from transformers import CLIPTokenizer, CLIPModel
+# from transformers import CLIPTokenizer, CLIPModel
 
 import umap
 
@@ -684,15 +684,15 @@ def get_knn_scores_from_img_encoder_id(args, net, train_loader, test_loader):
         ftrain, _ = get_features(args, net, train_loader, dataset = 'ID_train')
         ftest,_ = get_features(args, net, test_loader, dataset = 'ID_test')
     else:
-        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_ID_train_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+        with open(os.path.join(args.template_dir, 'all_feat', f'{args.name}_{args.K}', f'all_feat_ID_train_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
             ftrain =np.load(f)
-        with open(os.path.join(args.template_dir,'all_feat', f'all_feat_ID_test_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+        with open(os.path.join(args.template_dir,'all_feat',f'{args.name}_{args.K}', f'all_feat_ID_test_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
             ftest =np.load(f)
     index = faiss.IndexFlatL2(ftrain.shape[1])
     ftrain = ftrain.astype('float32')
     ftest = ftest.astype('float32')
     index.add(ftrain)
-    D, _ = index.search(ftest, args.K, )
+    D, I = index.search(ftest, args.K)
     scores = D[:,-1]
     return scores, index
 
@@ -703,10 +703,45 @@ def get_knn_scores_from_img_encoder_ood(args, net, ood_loader, out_dataset, inde
     if args.generate: 
         food, _ = get_features(args, net, ood_loader, dataset = out_dataset) 
     else: 
-        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{out_dataset}_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+        with open(os.path.join(args.template_dir, 'all_feat', f'{args.name}_{args.K}', f'all_feat_{out_dataset}_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
             food =np.load(f)
     D, _ = index.search(food.astype('float32'), args.K)
     scores_ood = D[:,-1]
+    return scores_ood
+
+def get_knn_scores_from_img_encoder_id_sklearn(args, net, train_loader, test_loader):
+    '''
+    for debugging
+    used for KNN score for ID dataset  
+    '''
+    if args.generate: 
+        ftrain, _ = get_features(args, net, train_loader, dataset = 'ID_train')
+        ftest,_ = get_features(args, net, test_loader, dataset = 'ID_test')
+    else:
+        with open(os.path.join(args.template_dir, 'all_feat',  f'{args.name}_{args.K}', f'all_feat_ID_train_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            ftrain =np.load(f)
+        with open(os.path.join(args.template_dir,'all_feat',  f'{args.name}_{args.K}', f'all_feat_ID_test_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            ftest =np.load(f)
+    from sklearn.neighbors import NearestNeighbors
+    index = NearestNeighbors(n_neighbors=args.K)
+    ftrain = ftrain.astype('float32')
+    ftest = ftest.astype('float32')
+    index.fit(ftrain)
+    D, I = index.kneighbors(ftest, return_distance = True) # distances, indices
+    scores = D[:,-1]**2
+    return scores, index
+
+def get_knn_scores_from_img_encoder_ood_sklearn(args, net, ood_loader, out_dataset, index):
+    '''
+    used for KNN score for OOD dataset
+    '''
+    if args.generate: 
+        food, _ = get_features(args, net, ood_loader, dataset = out_dataset) 
+    else: 
+        with open(os.path.join(args.template_dir, 'all_feat',  f'{args.name}_{args.K}', f'all_feat_{out_dataset}_{args.max_count}_{args.normalize}.npy'), 'rb') as f:
+            food =np.load(f)
+    D, _ = index.kneighbors(food.astype('float32'), return_distance = True)
+    scores_ood = D[:,-1]**2
     return scores_ood
 
 def get_fp_scores_from_clip_id(args, net, test_labels, train_loader, test_loader):

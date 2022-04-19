@@ -21,7 +21,7 @@ def plot_distribution(args, id_scores, ood_scores, out_dataset):
 
 
 # plot umaps
-def plot_umap_id_only(name = 'all_feat_ID_test_500_True', template_dir = 'img_templates', subset = False):
+def plot_umap_id_only(name = 'all_feat_ID_test_100_False', template_dir = '/nobackup/img_templates', subset = False):
     with open(os.path.join(template_dir, 'all_feat', f'{name}.npy'), 'rb') as f:
         feat =np.load(f)
         labels = np.load(f)
@@ -48,14 +48,18 @@ def plot_umap_id_only(name = 'all_feat_ID_test_500_True', template_dir = 'img_te
     ax.legend(fontsize = 15) 
 
     plt.tight_layout()
-    plt.savefig(f'{name}_umap_train_subsample.pdf')
+    plt.savefig(f'{name}_umap_train_subsample.png')
 
-def plot_umap_id_ood(id = 'all_feat_ID_test_500_True', ood_name = "ID_train", template_dir = 'img_templates'):
-    ood = f'all_feat_{ood_name}_500_True'
+def plot_umap_id_ood(id = 'all_feat_ID_train_100_False', ood_name = "ID_train", template_dir = '/nobackup/img_templates',  name = 'knn_debug_original_40_10', subset = False):
+    ood = f'all_feat_{ood_name}_100_False'
     label_to_class_idx = {0: ood_name, 1: "ID"}
-    with open(os.path.join(template_dir, 'all_feat', f'{id}.npy'), 'rb') as f:
+    with open(os.path.join(template_dir, 'all_feat', name, f'{id}.npy'), 'rb') as f:
         id_feat =np.load(f)
-    with open(os.path.join(template_dir, 'all_feat', f'{ood}.npy'), 'rb') as f:
+    if subset:
+        size = 50000
+        idx = np.random.choice(range(len(id_feat)), size = size, replace = False)
+        id_feat = id_feat[idx]
+    with open(os.path.join(template_dir, 'all_feat',name, f'{ood}.npy'), 'rb') as f:
         ood_feat =np.load(f)
         if len(ood_feat) > len(id_feat): # subsample
             size = len(id_feat)
@@ -86,7 +90,7 @@ def plot_umap_id_ood(id = 'all_feat_ID_test_500_True', ood_name = "ID_train", te
     ax.legend(fontsize = 15) 
 
     plt.tight_layout()
-    plt.savefig(f'{ood_name}_umap.pdf')
+    plt.savefig(f'{name}_{ood_name}_umap.png')
 
 # plot histograms
 def show_values_on_bars(axs):
@@ -233,15 +237,16 @@ def debug_distribution(id_scores, ood_scores, out_dataset, option = 'max', k = 1
     plt.savefig(os.path.join("PLOTS", f"topK_softmax={softmax}_k={k}_{option}_{out_dataset}.png"), bbox_inches='tight')
 
 if __name__ == '__main__':
-    # ood_names = ['dtd','places365', 'SUN']
-    # for ood_name in ood_names:
-    #     plot_umap_id_ood(ood_name = ood_name)
-    #plot_umap_id_only()
+    # plot_umap_id_only()
+    ood_names = ['dtd','places365', 'SUN', 'iNaturalist']
+    for ood_name in ood_names:
+        plot_umap_id_ood(ood_name = ood_name)
     # plot_umap_id_ood()
     # plot_umap_id_fingerprint(T = 0.1)
     # plot_hist_all_output(T = 1)
-    softmax = True
-    for k in [3]:
-        debug_umap_fingerprint(out_dataset = 'SUN', id_dataset = 'ID_test', k = k, softmax = softmax)
-        debug_umap_fingerprint(out_dataset = 'iNaturalist', id_dataset = 'ID_test', k = k, softmax = softmax)
+
+    # softmax = True
+    # for k in [3]:
+    #     debug_umap_fingerprint(out_dataset = 'SUN', id_dataset = 'ID_test', k = k, softmax = softmax)
+    #     debug_umap_fingerprint(out_dataset = 'iNaturalist', id_dataset = 'ID_test', k = k, softmax = softmax)
 

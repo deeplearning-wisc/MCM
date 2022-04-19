@@ -18,20 +18,20 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
-    parser.add_argument('--in_dataset', default='food101', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet-subset', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "h_clip_debug", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = 'inst-01', type =str, 
+    parser.add_argument('--name', default = "mip_debug_original_40", type =str, help = "unique ID for the run")    
+    parser.add_argument('--server', default = 'galaxy-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=0, type=int, help='the GPU indice to use')
+    parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
     # batch size. num of classes
-    parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=64, type=int,
+    parser.add_argument('--num_imagenet_cls', type=int, default=40, help='Number of classes for imagenet subset')
+    parser.add_argument('-b', '--batch-size', default=512, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='H-CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #fine-tune ckpt
@@ -54,8 +54,9 @@ def process_args():
     parser.add_argument('--K', default = 10, type =int, help = "# of nearest neighbor")
     # for Mahalanobis score
     parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
-    parser.add_argument('--generate', type = bool, default = False, help='whether to generate class-wise means or read from files for Maha score')
+    parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = '/nobackup/img_templates', help='the loc of stored classwise mean and precision matrix')
+    
     parser.add_argument('--subset', default = False, type =bool, help = "whether uses a subset of samples in the training set")
     parser.add_argument('--max_count', default = 100, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
@@ -65,7 +66,7 @@ def process_args():
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
-    parser.add_argument('--seed', default = 1, type =int, help = "random seed")
+    parser.add_argument('--seed', default = 2, type =int, help = "random seed")
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
@@ -87,6 +88,8 @@ def process_args():
         args.log_directory = f"results/ImageNetDogs_{args.num_imagenet_cls}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
     else:
         args.log_directory = f"results/{args.in_dataset}/{args.score}/{args.model}_{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}_normalize_{args.normalize}"
+    if args.score == 'knn':
+        args.log_directory += f'_k_{args.K}'
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
@@ -216,8 +219,8 @@ def main():
         if args.generate: 
             classwise_mean, precision = get_mean_prec(args, net, train_loader) # this is faster than getting mean and var separately
 
-        classwise_mean = torch.load(os.path.join(args.template_dir,f'{args.model}_classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
-        precision = torch.load(os.path.join(args.template_dir,f'{args.model}_precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
+        classwise_mean = torch.load(os.path.join(args.template_dir, f'{args.model}_classwise_mean_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
+        precision = torch.load(os.path.join(args.template_dir,  f'{args.model}_precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
         # args.normalize = True
         in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
 
