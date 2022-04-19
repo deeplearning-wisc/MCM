@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt
 from torchvision.datasets import CIFAR100
 from torchvision.datasets import CIFAR10
 import json
+import random
 
 def setup_seed(args):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     np.random.seed(args.seed)
+    random.seed(args.seed)
 
 def obtain_cifar_classes(root, which_cifar = 'CIFAR-10'):
     if which_cifar == 'CIFAR-100':
@@ -124,7 +126,6 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
     '''
     extract image features from the dataset
     '''
-    from collections import Counter
     all_features = []
     all_labels = []
     with torch.no_grad():
@@ -140,7 +141,9 @@ def get_features(args, model, dataloader, to_np = True, dataset = 'none'):
     if to_np:
         all_features = torch.cat(all_features).numpy()
         all_labels = torch.cat(all_labels).cpu().numpy()
-        with open(os.path.join(args.template_dir, 'all_feat', f'all_feat_{dataset}_{args.max_count}_{args.normalize}.npy'), 'wb') as f:
+        save_dir = os.path.join(args.template_dir, 'all_feat', f'{args.name}_{args.K}')
+        os.makedirs(save_dir, exist_ok= True)
+        with open(os.path.join(save_dir,  f'all_feat_{dataset}_{args.max_count}_{args.normalize}.npy'), 'wb') as f:
             np.save(f, all_features)
             np.save(f, all_labels)
 
