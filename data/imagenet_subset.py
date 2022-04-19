@@ -76,7 +76,7 @@ class ImageNetDogs(Dataset):
         image_path = os.path.join(self.root, self.split, cls, image_id)
         image = Image.open(image_path)
         if self.transform:
-            image = self.transform(image)
+            image = self.transform(image.convert('RGB'))
         if self.target_transform:
             label = self.target_transform(label)
         return image, label

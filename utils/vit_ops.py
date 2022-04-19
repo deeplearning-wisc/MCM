@@ -39,7 +39,7 @@ def set_model_clip(args):
     args.ckpt = ckpt_mapping[args.CLIP_ckpt]
     model =  CLIPModel.from_pretrained(args.ckpt)
     if args.finetune_ckpt:
-        model.load_state_dict(torch.load(args.finetune_ckpt))
+        model.load_state_dict(torch.load(args.finetune_ckpt, map_location=torch.device(args.gpu)))
     model = model.cuda()
 
     normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), 

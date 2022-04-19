@@ -60,13 +60,20 @@ def set_optimizer(args, model):
 
 def set_model(args):
     if args.model == 'clip':
-        featurizer, preprocess = clip.load(args.ckpt, args.device)
+        model, preprocess = clip.load(args.ckpt, args.device)
+        model.eval()
+        featurizer = model.encode_image
+    elif args.model == 'H-CLIP':
+        args.CLIP_ckpt = args.ckpt
+        model, preprocess = set_model_clip(args)
+        model.eval()
+        featurizer = model.get_image_features
     classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls).cuda()
     return preprocess, featurizer, classifier
 
 def linear_probe_one_epoch(args, train_loader, featurizer, classifier, criterion, optimizer, epoch, log):
     """one epoch training"""
-    featurizer.eval()
+    # featurizer.eval()
     classifier.train()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -80,7 +87,7 @@ def linear_probe_one_epoch(args, train_loader, featurizer, classifier, criterion
 
         # compute loss
         with torch.no_grad():
-            features = featurizer.encode_image(images).float() #convert from fp16 to fp32
+            features = featurizer(images).float() #convert from fp16 to fp32
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
         output = classifier(features.detach())
@@ -106,7 +113,7 @@ def linear_probe_one_epoch(args, train_loader, featurizer, classifier, criterion
 
 def validate(args, val_loader, featurizer, classifier, criterion, log):
     """validation"""
-    featurizer.eval()
+    # featurizer.eval()
     classifier.eval()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -116,7 +123,7 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
             labels = labels.cuda()
             bsz = labels.shape[0]
             # forward
-            features = featurizer.encode_image(images).float()
+            features = featurizer(images).float()
             if args.normalize: 
                 features /= features.norm(dim=-1, keepdim=True)
             output = classifier(features)
@@ -150,6 +157,8 @@ def parse_option():
                         help='model')
     parser.add_argument('--ckpt', type=str, default='ViT-L/14',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
+    parser.add_argument('--finetune_ckpt', default =None, type=str,
+                        help='ckpt location for fine-tuned clip')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
@@ -211,7 +220,7 @@ def parse_option():
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
         args.root_dir = '/nobackup/dataset_myf'
     if args.server in ['galaxy-01']:
-        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
+        args.save_dir = f'/nobackup/zcai/checkpoints/clip_linear/{args.in_dataset}' # raises "permission denied" without adding zcai
         args.root_dir = '/nobackup-slow/dataset'
     args.log_directory = "linear_probe_logs/{in_dataset}/{unique_id}/".format(in_dataset=args.in_dataset, unique_id= args.unique_id)
     os.makedirs(args.save_dir, exist_ok=True)

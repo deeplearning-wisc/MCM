@@ -323,14 +323,14 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     # fingerprints = []
     # labels_all = []
     #end
-    wordnet_labels = []
-    if args.score == 'MIPT-wordnet':
-        for c in test_labels:
-            word = wn.synsets(c)[0]
-            wordnet_labels.append([c])
-            for i in range(0, 9):
-                word = word.hypernyms()[0]
-                wordnet_labels[i].append()
+    # wordnet_labels = []
+    # if args.score == 'MIPT-wordnet':
+    #     for c in test_labels:
+    #         word = wn.synsets(c)[0]
+    #         wordnet_labels.append([c])
+    #         for i in range(0, 9):
+    #             word = word.hypernyms()[0]
+    #             wordnet_labels[i].append()
 
     tqdm_object = tqdm(loader, total=len(loader))
     with torch.no_grad():

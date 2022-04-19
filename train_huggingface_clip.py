@@ -53,7 +53,7 @@ def get_params(description = 'Training clip'):
     # parse parameters
     params = parser.parse_args()
     params.unique_id += f'_{params.lr}'
-    params.ckpt = "openai/clip-vit-base-patch32"
+    params.ckpt = 'openai/clip-vit-large-patch14'
     if params.server == 'A100':
         params.image_dir = '/home/mingyifei/datasets/COCO' 
         params.save_dir = f'checkpoints/clip/{params.dataset}'
@@ -65,10 +65,10 @@ def get_params(description = 'Training clip'):
     elif params.server in ['galaxy-01', 'galaxy-02']:
         params.image_dir = '/nobackup-slow/dataset/ILSVRC-2012'
         params.save_dir = f'/nobackup/zcai/checkpoints/clip/{params.dataset}' # /nobackup/checkpoints throwing permission denied error
-        params.batch_size = 128
+        params.batch_size = 180
     params.captions_dir = f"{params.root_dir}/{params.dataset}/captions/{params.lang}"
     os.makedirs(params.save_dir, exist_ok=True)
-    params.device = torch.device("cuda:5") if torch.cuda.is_available() else torch.device('cpu')
+    params.device = torch.device("cuda:6") if torch.cuda.is_available() else torch.device('cpu')
     return params
 
 def get_lr(optimizer):
@@ -135,7 +135,7 @@ def train(params, model, tokenizer, processor, logf, writer):
     best_loss = float('inf')
     global_step = 0
 
-    ### test valid 
+    ### debug valid_epoch ###
     with torch.no_grad():
         valid_loss, acc = valid_epoch(params, model, tokenizer, processor, global_step)
         print(acc)

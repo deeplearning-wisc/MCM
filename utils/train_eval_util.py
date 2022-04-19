@@ -159,6 +159,7 @@ def set_val_loader(args, preprocess = None):
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
         dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
+        # dataset = ImageNetDogs(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess, id=args.name, save=False)
         val_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "bird200":

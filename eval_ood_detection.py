@@ -205,7 +205,7 @@ def main():
         num_right = len(right_score)
         num_wrong = len(wrong_score)
         log.debug('Error Rate {:.2f}'.format(100 * num_wrong / (num_wrong + num_right)))
-    
+
     elif args.score == 'knn':
         in_score, index_bad = get_knn_scores_from_img_encoder_id(args, net, train_loader, test_loader)
     elif args.score == 'fingerprint':
