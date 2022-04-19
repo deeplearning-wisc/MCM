@@ -62,7 +62,7 @@ def get_params(description = 'Training clip'):
         params.image_dir = '/nobackup/COCO/COCO-14'
         params.save_dir = f'/nobackup/checkpoints/clip/{params.dataset}'
         params.batch_size = 64
-    elif params.server in ['galaxy-01']:
+    elif params.server in ['galaxy-01', 'galaxy-02']:
         params.image_dir = '/nobackup-slow/dataset/ILSVRC-2012'
         params.save_dir = f'/nobackup/zcai/checkpoints/clip/{params.dataset}' # /nobackup/checkpoints throwing permission denied error
         params.batch_size = 128
@@ -111,7 +111,7 @@ def train_epoch(model, tokenizer, train_loader, optimizer, global_step):
         # torch.cuda.empty_cache()
     return loss_meter, global_step
         
-def train(params, model, tokenizer, logf, writer):
+def train(params, model, tokenizer, processor, logf, writer):
     print("Training model")
     if params.dataset == 'COCO':
         train_loader= build_coco_loader(params, option = 'train')
@@ -134,15 +134,20 @@ def train(params, model, tokenizer, logf, writer):
     # lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0002, max_lr=0.002,step_size_up=5,mode="triangular")
     best_loss = float('inf')
     global_step = 0
+
+    ### test valid 
     with torch.no_grad():
-        valid_loss, acc = valid_epoch(params, model, tokenizer, global_step)
+        valid_loss, acc = valid_epoch(params, model, tokenizer, processor, global_step)
+        print(acc)
+    ###
+
     for epoch in range(params.epochs):
         print(f"Epoch: {epoch + 1}")
         model.train()
         train_loss, global_step = train_epoch(model, tokenizer, train_loader, optimizer, global_step)
         model.eval()
         with torch.no_grad():
-            valid_loss, acc = valid_epoch(params, model, tokenizer, global_step)
+            valid_loss, acc = valid_epoch(params, model, tokenizer, processor, global_step)
         if valid_loss.avg < best_loss:
             params.model_path =  os.path.join(params.save_dir, f"best_{params.lang}.pt") 
             best_loss = valid_loss.avg
@@ -156,7 +161,7 @@ def train(params, model, tokenizer, logf, writer):
         log_write(logf, "epoch {} train_loss: {:.4f} val_loss: {:.4f} acc {:.4f}".format(epoch, train_loss.avg, valid_loss.avg, acc))
     lr_scheduler.step()
 
-def valid_epoch(params, model, tokenizer, global_step):
+def valid_epoch(params, model, tokenizer, processor, global_step):
     loss_meter = AverageMeter()
     if params.dataset == 'COCO':
         val_loader= build_coco_loader(params, option = 'val')
@@ -166,7 +171,7 @@ def valid_epoch(params, model, tokenizer, global_step):
 
     wordnet_ids = get_dogs_cls()
     labels = labels_from_wordnet_ids(wordnet_ids)
-    captions = [f'This is a photo of {l}' for l in labels]
+    captions = [f'A photo of a {l}.' for l in labels]
     cls_text_tks = tokenizer(captions, padding=True, truncation=True,max_length=params.max_length)
 
     tqdm_object = tqdm(val_loader, total=len(val_loader))
@@ -188,11 +193,15 @@ def valid_epoch(params, model, tokenizer, global_step):
             tqdm_object.set_postfix(valid_loss=loss_meter.avg)
 
             # eval accuracy
+            # inputs = processor(
+            #     text=captions, images=batch['pixel_values'], return_tensors="pt", padding=True, truncation=True, max_length=params.max_length
+            # )
             for k, v in cls_text_tks.items():
                 batch[k] = torch.tensor(v).to(params.device)
+            batch['return_loss'] = False
+            batch['pixel_values'] = batch['pixel_values'][0:params.batch_size,:]
             cls_text_output = model(**batch)
             pred = torch.argmax(cls_text_output.logits_per_text, dim=0).cpu()
-            print(pred, targets)
             n_correct = n_correct + count_nonzero(pred == targets)
             n_sample = n_sample + bz
 
@@ -205,6 +214,7 @@ if __name__ == "__main__":
     params = get_params()
     print("Caption Language: " + params.lang)
     tokenizer = AutoTokenizer.from_pretrained(params.ckpt, do_lower_case=True)
+    processor = CLIPProcessor.from_pretrained(params.ckpt, do_lower_case=True)
     model = CLIPModel.from_pretrained(params.ckpt).to(params.device)
     log_dir = 'train_results/logs'
     os.makedirs(log_dir, exist_ok = True)
@@ -214,5 +224,5 @@ if __name__ == "__main__":
     if params.resume:
         model.load_state_dict(torch.load(params.model_path))
     if params.is_train:
-        train(params, model, tokenizer, logf, writer)
+        train(params, model, tokenizer, processor, logf, writer)
     
