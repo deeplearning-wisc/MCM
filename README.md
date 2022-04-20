@@ -8,7 +8,7 @@ Out-of-distribution with language supervision
    -  play with SkImages: call `play_with_skimage()`
 
 
-- `eval_ood_detection.py`: OOD detection for CIFAR-10, CIFAR-100, and ImageNet-1K as ID. Supported scores:
+- `eval_ood_detection.py`: Perform OOD detection. Supported scores:
     -  'Maha', 'knn', 'analyze', # img encoder only; feature space 
     - 'energy', 'entropy', 'odin', # img->text encoder; feature space
     - 'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
