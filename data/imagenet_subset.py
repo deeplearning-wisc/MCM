@@ -42,7 +42,7 @@ class ImageNetSubset(Dataset):
 
 class ImageNetDogs(Dataset):
 
-    def __init__(self, n_cls, root, class_list_loc='./data/ImageNetDogs', id='', save=True, train=True, transform=None, target_transform=None, seed=0, in_dist=True):
+    def __init__(self, n_cls, root, class_list_loc='./data/ImageNetDogs', save=True, train=True, transform=None, target_transform=None, seed=0, in_dist=True):
         npr.seed(seed)
         self.n_cls = int(n_cls)
         self.split = 'train' if train else 'val'

@@ -9,6 +9,7 @@ import clip
 from torch.utils.data import DataLoader
 from torchvision import transforms, datasets
 from sklearn.utils import shuffle
+from transformers import CLIPModel
 from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
 # from transformers import ViTFeatureExtractor,  ViTModel,  CLIPModel

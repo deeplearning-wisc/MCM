@@ -5,6 +5,7 @@ from tqdm import tqdm
 import clip
 import torchvision
 import sklearn.metrics as sk
+from transformers import CLIPTokenizer
 from data.imagenet_subset import ImageNetDogs
 from utils.common import get_features, get_fingerprint
 from utils.plot_util import plot_distribution
@@ -88,7 +89,7 @@ def set_ood_loader_ImageNet_dogs(args, preprocess):
     elif args.server in ['galaxy-01', 'galaxy-02']:
         path = os.path.join(args.root_dir, 'ILSVRC-2012')
     kwargs = {'num_workers': 4, 'pin_memory': True}
-    dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False, in_dist=False)
+    dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, save=False, in_dist=False)
     ood_loader = torch.utils.data.DataLoader(dataset,
             batch_size=args.batch_size, shuffle=False, **kwargs)
     return ood_loader
@@ -463,6 +464,8 @@ def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
             images = images.cuda()
             if args.model == 'CLIP-Linear':
                 image_features = net.encode_image(images).float()
+            elif args.model == 'H-CLIP-Linear':
+                image_features = net.get_image_features(images).float().detach()
             elif args.model == 'vit-Linear':
                 image_features = net(pixel_values = images.float()).last_hidden_state
                 image_features = image_features[:, 0, :].detach()

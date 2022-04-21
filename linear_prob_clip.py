@@ -149,7 +149,8 @@ def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     #dataset 
     parser.add_argument('--in_dataset', type=str, default='ImageNet',
-                        choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet'], help='img dataset')
+                        choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet', 'ImageNet-dogs'], help='img dataset')
+    parser.add_argument('--num_imagenet_cls', type=int, default=40, help='Number of classes for imagenet subset')
     parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     #model setup
@@ -192,6 +193,7 @@ def parse_option():
     parser.add_argument('--unique_id', type=str, default='test_place_holder',
                         help='id of the run')
     parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
+    parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     args = parser.parse_args()
 
     args.device = f"cuda:{args.gpu}"
@@ -238,6 +240,8 @@ def linear_probe_pytorch():
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":
         args.n_cls = 1000
+    elif args.in_dataset == 'ImageNet-dogs':
+        args.n_cls = args.num_imagenet_cls
 
     log = set_up_logger(args)
     preprocess, featurizer, classifier = set_model(args)

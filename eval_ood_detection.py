@@ -31,7 +31,7 @@ def process_args():
     parser.add_argument('-b', '--batch-size', default=512, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #fine-tune ckpt
@@ -78,7 +78,7 @@ def process_args():
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['galaxy-01', 'galaxy-02']:
         args.root_dir = '/nobackup-slow/dataset'
-        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
+        args.save_dir = f'/nobackup/zcai/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['A100']:
         args.root_dir = ''
 
@@ -136,7 +136,15 @@ def main():
         classifier.cuda()
         classifier.eval()
     elif args.model == 'H-CLIP':
+        net, preprocess = set_model_clip(args)    
+    elif args.model == "H-CLIP-Linear": #fine-tuned CLIP (linear layer only)
         net, preprocess = set_model_clip(args)
+        args.ckpt = os.path.join(args.save_dir, f'{args.classifier_ckpt}_linear_probe_epoch_{args.epoch}.pth')
+        linear_probe_dict= torch.load(args.ckpt,  map_location='cpu')['classifier']
+        classifier = LinearClassifier(feat_dim=args.feat_dim, num_classes=args.n_cls)
+        classifier.load_state_dict(linear_probe_dict)
+        classifier.cuda()
+        classifier.eval()
     elif args.model == 'vit':
         net, preprocess = set_model_vit()
     elif args.model == 'vit-Linear':
@@ -180,7 +188,7 @@ def main():
     else:
         if args.score in ['Maha', 'knn', 'fingerprint'] and args.in_dataset in ['ImageNet']:
             args.subset = True
-        if args.model in ['CLIP', 'CLIP-Linear', 'H-CLIP']:
+        if args.model in ['CLIP', 'CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear']:
             test_loader = set_val_loader(args, preprocess)
             train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
         elif args.model in ['vit', 'vit-Linear']:
@@ -200,7 +208,7 @@ def main():
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP', 'H-CLIP']: # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model in ['CLIP-Linear', 'vit-Linear']: # after linear probe; img encoder -> logit space
+        elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
                 in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, classifier, in_dist=True)
             else: # energy_logits and MSP
@@ -259,7 +267,7 @@ def main():
             else: # non knn scores
                 if args.model in ['CLIP', 'H-CLIP']:
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
-                elif args.model in ['CLIP-Linear', 'vit-Linear']:
+                elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear']:
                     if args.score == 'odin_logits':
                         out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, classifier)
                     else: 
