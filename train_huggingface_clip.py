@@ -136,9 +136,9 @@ def train(params, model, tokenizer, processor, logf, writer):
     global_step = 0
 
     ### debug valid_epoch ###
-    with torch.no_grad():
-        valid_loss, acc = valid_epoch(params, model, tokenizer, processor, global_step)
-        print(acc)
+    # with torch.no_grad():
+    #     valid_loss, acc = valid_epoch(params, model, tokenizer, processor, global_step)
+    #     print(acc)
     ###
 
     for epoch in range(params.epochs):
