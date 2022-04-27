@@ -18,11 +18,11 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
-    parser.add_argument('--in_dataset', default='ImageNet-subset', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "mip_debug_original_40", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "mip_debug", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'galaxy-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
@@ -32,7 +32,7 @@ def process_args():
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/32',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #fine-tune ckpt
     parser.add_argument('--finetune_ckpt', default =None, type=str,

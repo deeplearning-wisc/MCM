@@ -73,9 +73,11 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
         if args.server == 'galaxy-01':
             testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'Textures'),
                                     transform=preprocess)
+        elif args.server == 'galaxy-02':
+            root = '/nobackup-slow/dataset'
         else:
-            root = '/nobackup/dataset_myf'
-            testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'ood_datasets', 'dtd', 'images'),
+            root = '/nobackup/dataset_myf/ood_datasets'
+        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
                                         transform=preprocess)
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
