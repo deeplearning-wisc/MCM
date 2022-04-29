@@ -148,19 +148,19 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     #dataset 
-    parser.add_argument('--in_dataset', type=str, default='ImageNet',
-                        choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet', 'ImageNet-dogs'], help='img dataset')
+    parser.add_argument('--in_dataset', type=str, default='food101',
+                        choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet', 'ImageNet-dogs', 'food101'], help='img dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=40, help='Number of classes for imagenet subset')
     parser.add_argument('--gpu', default=1, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
                         help='model')
-    parser.add_argument('--ckpt', type=str, default='ViT-L/14',
+    parser.add_argument('--ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'ViT-L/14'], help='which pretrained img encoder to use')
     parser.add_argument('--finetune_ckpt', default =None, type=str,
                         help='ckpt location for fine-tuned clip')
-    parser.add_argument('--feat_dim', type=int, default=768, help='feat dim')
+    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
     #optimization basic
@@ -192,7 +192,7 @@ def parse_option():
                         help='save frequency (# of epoch)')
     parser.add_argument('--unique_id', type=str, default='test_place_holder',
                         help='id of the run')
-    parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
+    parser.add_argument("--server", type=str, default='galaxy-02', help="run on which server")
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     args = parser.parse_args()
 
@@ -224,6 +224,9 @@ def parse_option():
     if args.server in ['galaxy-01']:
         args.save_dir = f'/nobackup/zcai/checkpoints/clip_linear/{args.in_dataset}' # raises "permission denied" without adding zcai
         args.root_dir = '/nobackup-slow/dataset'
+    elif args.server in ['galaxy-02']:
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
+        args.root_dir = '/nobackup-slow/dataset'
     args.log_directory = "linear_probe_logs/{in_dataset}/{unique_id}/".format(in_dataset=args.in_dataset, unique_id= args.unique_id)
     os.makedirs(args.save_dir, exist_ok=True)
     os.makedirs(args.log_directory, exist_ok=True)
@@ -234,14 +237,7 @@ def linear_probe_pytorch():
     args = parse_option()
     
     # set up training 
-    if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
-        args.n_cls = 10
-    elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
-        args.n_cls = 100
-    elif args.in_dataset == "ImageNet":
-        args.n_cls = 1000
-    elif args.in_dataset == 'ImageNet-dogs':
-        args.n_cls = args.num_imagenet_cls
+    args.n_cls = get_num_cls(args)
 
     log = set_up_logger(args)
     preprocess, featurizer, classifier = set_model(args)

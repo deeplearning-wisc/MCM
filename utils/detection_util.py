@@ -14,6 +14,7 @@ from torchvision.transforms import transforms
 import torch.nn.functional as F
 import faiss
 import scipy
+from data.imagenet_subset import ImageNetSubset
 import matplotlib.pyplot as plt
 from scipy import stats
 from utils.train_eval_util import set_train_loader
@@ -77,8 +78,15 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
             root = '/nobackup-slow/dataset'
         else:
             root = '/nobackup/dataset_myf/ood_datasets'
-        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
+            testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
                                         transform=preprocess)
+    elif out_dataset in ["ImageNet100", "ImageNet10"]:
+        if args.server in ['inst-01', 'inst-04']:
+            path = os.path.join('/nobackup','ImageNet')
+        elif args.server in ['galaxy-01', 'galaxy-02']:
+            path = os.path.join(args.root_dir, 'ILSVRC-2012')
+            num_cls = {"ImageNet100": 100, "ImageNet10": 10}
+        testsetout = ImageNetSubset(num_cls[out_dataset], path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
@@ -338,8 +346,8 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
     tqdm_object = tqdm(loader, total=len(loader))
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(tqdm_object):
-            if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
-                break
+            # if batch_idx >= len(loader.dataset)  // args.batch_size and in_dist is False:
+            #     break
             bz = images.size(0)
             labels = labels.long().cuda()
             images = images.cuda()

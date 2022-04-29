@@ -18,21 +18,21 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
-    parser.add_argument('--in_dataset', default='ImageNet', type=str, 
+    parser.add_argument('--in_dataset', default='ImageNet-subset', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "mip_debug", type =str, help = "unique ID for the run")    
+    parser.add_argument('--name', default = "knn_debug", type =str, help = "unique ID for the run")    
     parser.add_argument('--server', default = 'galaxy-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
     # batch size. num of classes
-    parser.add_argument('--num_imagenet_cls', type=int, default=40, help='Number of classes for imagenet subset')
+    parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
     parser.add_argument('-b', '--batch-size', default=512, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
-    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/32',
+    parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #fine-tune ckpt
     parser.add_argument('--finetune_ckpt', default =None, type=str,
@@ -42,7 +42,7 @@ def process_args():
                              help='which epoch to test')
     parser.add_argument('--classifier_ckpt', default ="ImageNet_google_vit-base-patch16-224-in21k_lr_0.1_decay_0_bsz_512_test_correctness_warm", type=str,
                              help='which classifier to load')
-    parser.add_argument('--feat_dim', type=int, default=768, help='feat dim； 512 for ViT-B and 768 for ViT-L')
+    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
     parser.add_argument('--score', default='MIP', type=str, choices = ['Maha', 'knn', 'analyze', # img encoder only; feature space 
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
@@ -60,7 +60,7 @@ def process_args():
     parser.add_argument('--subset', default = False, type =bool, help = "whether uses a subset of samples in the training set")
     parser.add_argument('--max_count', default = 100, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 1, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.001, type =float, help = "noise maganitute for inputs") 
     # for fingerprint score 
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
@@ -166,6 +166,7 @@ def main():
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
         out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
+        # out_datasets = ['ImageNet10']
     elif args.in_dataset == 'bird200':
         out_datasets = ['placesbg']
     elif args.in_dataset == 'ImageNet-dogs':
@@ -274,6 +275,11 @@ def main():
                         out_score = get_ood_scores_clip_linear(args, net, classifier, ood_loader) 
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
+        #debug
+        # with open('score_tt.npy', 'wb') as f:
+        #     np.save(f, in_score)
+        #     np.save(f, out_score)
+        #end
         plot_distribution(args, in_score, out_score, out_dataset)
         get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list)
     log.debug('\n\nMean Test Results')

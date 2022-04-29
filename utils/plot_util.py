@@ -13,13 +13,22 @@ import torch.nn.functional as F
 def plot_distribution(args, id_scores, ood_scores, out_dataset):
     # args.score = 'CLS'
     sns.set(style="white", palette="muted")
-    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", fill = True, alpha = 0.5)
+    palette = ['#A8BAE3', '#55AB83']
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.8)
     plt.title(f"ID v.s. {out_dataset} {args.score} score")
     # plt.ylim(0, 0.3)
     # plt.xlim(-10, 50)
     plt.savefig(os.path.join(args.log_directory,f"{args.score}_{out_dataset}.png"), bbox_inches='tight')
 
-
+def plot_distribution_debug(id_scores, ood_scores, out_dataset):
+    # args.score = 'CLS'
+    sns.set(style="white", palette="muted")
+    palette = ['#A8BAE3', '#55AB83']
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.7)
+    plt.title(f"ID v.s. {out_dataset} MIP score")
+    # plt.ylim(0, 0.3)
+    # plt.xlim(-10, 50)
+    plt.savefig(f"MIP_{out_dataset}.png", bbox_inches='tight')
 # plot umaps
 def plot_umap_id_only(name = 'all_feat_ID_test_100_False', template_dir = '/nobackup/img_templates', subset = False):
     with open(os.path.join(template_dir, 'all_feat', f'{name}.npy'), 'rb') as f:
@@ -237,10 +246,15 @@ def debug_distribution(id_scores, ood_scores, out_dataset, option = 'max', k = 1
     plt.savefig(os.path.join("PLOTS", f"topK_softmax={softmax}_k={k}_{option}_{out_dataset}.png"), bbox_inches='tight')
 
 if __name__ == '__main__':
-    # plot_umap_id_only()
-    ood_names = ['dtd','places365', 'SUN', 'iNaturalist']
-    for ood_name in ood_names:
-        plot_umap_id_ood(ood_name = ood_name)
+
+    with open('score_tt.npy', 'rb') as f:
+            in_scores = np.load(f)
+            out_scores = np.load(f)
+    plot_distribution_debug(in_scores, out_scores, out_dataset = "teaser")
+
+    # ood_names = ['dtd','places365', 'SUN', 'iNaturalist']
+    # for ood_name in ood_names:
+    #     plot_umap_id_ood(ood_name = ood_name)
     # plot_umap_id_ood()
     # plot_umap_id_fingerprint(T = 0.1)
     # plot_hist_all_output(T = 1)
