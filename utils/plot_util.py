@@ -14,8 +14,8 @@ def plot_distribution(args, id_scores, ood_scores, out_dataset):
     # args.score = 'CLS'
     sns.set(style="white", palette="muted")
     palette = ['#A8BAE3', '#55AB83']
-    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.8)
-    plt.title(f"ID v.s. {out_dataset} {args.score} score")
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.8, norm_hist=True)
+    # plt.title(f"ID v.s. {out_dataset} {args.score} score")
     # plt.ylim(0, 0.3)
     # plt.xlim(-10, 50)
     plt.savefig(os.path.join(args.log_directory,f"{args.score}_{out_dataset}.png"), bbox_inches='tight')

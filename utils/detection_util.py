@@ -78,7 +78,7 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
             root = '/nobackup-slow/dataset'
         else:
             root = '/nobackup/dataset_myf/ood_datasets'
-            testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
+        testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
                                         transform=preprocess)
     elif out_dataset in ["ImageNet100", "ImageNet10"]:
         if args.server in ['inst-01', 'inst-04']:

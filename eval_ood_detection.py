@@ -60,7 +60,7 @@ def process_args():
     parser.add_argument('--subset', default = False, type =bool, help = "whether uses a subset of samples in the training set")
     parser.add_argument('--max_count', default = 100, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     # for ODIN score 
-    parser.add_argument('--T', default = 0.01, type =float, help = "temperature") 
+    parser.add_argument('--T', default = 1, type =float, help = "temperature") 
     parser.add_argument('--noiseMagnitude', default = 0.001, type =float, help = "noise maganitute for inputs") 
     # for fingerprint score 
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
