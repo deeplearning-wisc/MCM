@@ -13,7 +13,7 @@ from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
 from transformers import ViTFeatureExtractor,  ViTModel
 from utils import *
-from utils.vit_ops import set_loader_vit
+from utils.vit_ops import set_val_loader_vit, set_train_loader_vit
 
 def set_up_logger(args):
     log = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ def parse_option():
     #model setup
     parser.add_argument('--model', type=str, default='vit',
                         help='model')
-    parser.add_argument('--ckpt', type=str, default='google/vit-base-patch16-224-in21k', help='which pretrained img encoder to use')
+    parser.add_argument('--ckpt', type=str, default='vit-L-16', help='which pretrained img encoder to use')
     parser.add_argument('--feat_dim', type=int, default=768, help='feat dim')
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
@@ -180,7 +180,7 @@ def parse_option():
                         help='save frequency (# of epoch)')
     parser.add_argument('--unique_id', type=str, default='test_correctness',
                         help='id of the run')
-    parser.add_argument("--server", type=str, default='inst-01', help="run on which server")
+    parser.add_argument("--server", type=str, default='inst-03', help="run on which server")
     args = parser.parse_args()
 
     args.device = f"cuda:{args.gpu}"
@@ -188,7 +188,7 @@ def parse_option():
     cudnn.benchmark = True
 
     args.lr_decay_epochs = [int(epoch) for epoch in args.lr_decay_epochs.split(",")]
-    CKPT_MARKER = {'google/vit-base-patch16-224-in21k':'google_vit-base-patch16-224-in21k'}
+    CKPT_MARKER = {'vit-B-16':'google_vit-base-patch16-224-in21k', 'vit-L-16':'google_vit-large-patch16-224-in21k'}
     args.unique_id = '{}_{}_lr_{}_decay_{}_bsz_{}_{}'.\
         format(args.in_dataset, CKPT_MARKER[args.ckpt], args.learning_rate, args.weight_decay,
                args.batch_size, args.unique_id)
@@ -205,7 +205,7 @@ def parse_option():
                     1 + math.cos(math.pi * args.warm_epochs / args.epochs)) / 2
         else:
             args.warmup_to = args.learning_rate
-    if args.server in ['inst-01', 'inst-04']:
+    if args.server in ['inst-01', 'inst-04', 'inst-03']:
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
         args.root_dir = '/nobackup/dataset_myf'
     if args.server in ['galaxy-01']:

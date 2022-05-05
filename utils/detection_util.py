@@ -7,6 +7,7 @@ import torchvision
 import sklearn.metrics as sk
 from transformers import CLIPTokenizer
 from data.imagenet_subset import ImageNetDogs
+from torchvision import datasets
 from utils.common import get_features, get_fingerprint
 from utils.plot_util import plot_distribution
 import utils.svhn_loader as svhn
@@ -80,13 +81,15 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
             root = '/nobackup/dataset_myf/ood_datasets'
         testsetout = torchvision.datasets.ImageFolder(root=os.path.join(root, 'dtd', 'images'),
                                         transform=preprocess)
-    elif out_dataset in ["ImageNet100", "ImageNet10"]:
-        if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
-        elif args.server in ['galaxy-01', 'galaxy-02']:
-            path = os.path.join(args.root_dir, 'ILSVRC-2012')
-            num_cls = {"ImageNet100": 100, "ImageNet10": 10}
-        testsetout = ImageNetSubset(num_cls[out_dataset], path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
+    # elif out_dataset in ["ImageNet100", "ImageNet10"]:
+    #     if args.server in ['inst-01', 'inst-04']:
+    #         path = os.path.join('/nobackup','ImageNet')
+    #     elif args.server in ['galaxy-01', 'galaxy-02']:
+    #         path = os.path.join(args.root_dir, 'ILSVRC-2012')
+    #         num_cls = {"ImageNet100": 100, "ImageNet10": 10}
+    #     testsetout = ImageNetSubset(num_cls[out_dataset], path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
+    elif out_dataset == 'ImageNet10':
+        testsetout = datasets.ImageFolder(os.path.join(args.root_dir, 'ImageNet10', 'train'), transform=preprocess)
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,
@@ -363,7 +366,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                     templates = openai_imagenet_template_subset[0]
                 elif (args.template == 'subset2'):
                     templates = openai_imagenet_template_subset[1]
-
+# 
                 # output = torch.zeros(bz,len(test_labels), device = args.device)
                 # template_weights = [0.4,0.15,0.15,0.15,0.15]
                 # template_weights = [0.2,0.2,0.2,0.2,0.2]
@@ -481,7 +484,10 @@ def get_ood_scores_clip_linear(args, net, classifier, loader, in_dist=False):
                 image_features = image_features[:, 0, :].detach()
             if args.normalize: 
                 image_features /= image_features.norm(dim=-1, keepdim=True)  
-            output = classifier(image_features)
+            if args.model == 'vit-Linear-H':
+                output = net(pixel_values = images.float()).logits
+            else:
+                output = classifier(image_features)
             # output, _ = output.sort(descending=True, dim=1)[0:args.n_cls]
             smax = to_np(F.softmax(output/ args.T, dim=1))
             if args.score == 'energy_logits':

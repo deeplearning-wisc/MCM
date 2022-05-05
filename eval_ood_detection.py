@@ -11,7 +11,7 @@ from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
 from utils.train_eval_util import set_model, set_train_loader, set_val_loader
-from utils.vit_ops import set_model_clip, set_model_vit, set_train_loader_vit, set_val_loader_vit
+from utils.vit_ops import set_model_clip, set_model_vit, set_model_vit_huggingface, set_train_loader_vit, set_val_loader_vit
 # sys.path.append(os.path.dirname(__file__))
 
 def process_args():
@@ -22,16 +22,17 @@ def process_args():
                         choices = ['CIFAR-10', 'CIFAR-100', 
                         'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "knn_debug", type =str, help = "unique ID for the run")    
-    parser.add_argument('--server', default = 'galaxy-01', type =str, 
+    parser.add_argument('--name', default = "test_imagenet100_10_seed_7", type =str, help = "unique ID for the run")  
+    parser.add_argument('--seed', default = 7, type =int, help = "random seed")  
+    parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
     # batch size. num of classes
     parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
-    parser.add_argument('-b', '--batch-size', default=512, type=int,
+    parser.add_argument('-b', '--batch-size', default=256, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
-    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear'], type=str, help='model architecture')
+    parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear',  'vit-Linear-H'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     #fine-tune ckpt
@@ -66,7 +67,6 @@ def process_args():
     parser.add_argument('--softmax', type = bool, default = False, help='whether to apply softmax to the inner prod')
     #Misc 
     parser.add_argument('--out_as_pos', action='store_true', help='OE define OOD data as positive.')
-    parser.add_argument('--seed', default = 2, type =int, help = "random seed")
     #for MIP variants score
     parser.add_argument('--template', default=['subset1'], type=str, choices=['full', 'subset1', 'subset2'])
     args = parser.parse_args()
@@ -155,6 +155,10 @@ def main():
         classifier.load_state_dict(linear_probe_dict)
         classifier.cuda()
         classifier.eval()
+    elif args.model == 'vit-Linear-H':
+        net, preprocess = set_model_vit_huggingface()
+        classifier = None
+
     net.eval()
 
     if args.in_dataset == 'CIFAR-10':
@@ -165,7 +169,8 @@ def main():
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
     elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
-        out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
+        out_datasets =  ['ImageNet10', 'SUN', 'places365','dtd', 'iNaturalist']
+        # out_datasets =  ['SUN']
         # out_datasets = ['ImageNet10']
     elif args.in_dataset == 'bird200':
         out_datasets = ['placesbg']
@@ -192,7 +197,7 @@ def main():
         if args.model in ['CLIP', 'CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear']:
             test_loader = set_val_loader(args, preprocess)
             train_loader = set_train_loader(args, preprocess, subset = args.subset) # used for KNN and Maha score
-        elif args.model in ['vit', 'vit-Linear']:
+        elif args.model in ['vit', 'vit-Linear', 'vit-Linear-H']:
             test_loader = set_val_loader_vit(args, preprocess)
             train_loader = set_train_loader_vit(args, preprocess, subset = args.subset) # used for KNN and Maha score
             
@@ -209,7 +214,7 @@ def main():
             in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, in_dist=True)
         elif args.model in ['CLIP', 'H-CLIP']: # MIP and variants
             in_score, right_score, wrong_score= get_ood_scores_clip(args, net, test_loader, test_labels, in_dist=True)
-        elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear']: # after linear probe; img encoder -> logit space
+        elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear', 'vit-Linear-H']: # after linear probe; img encoder -> logit space
             if args.score == 'odin_logits':
                 in_score, right_score, wrong_score = get_ood_scores_clip_odin(args, net, test_loader, test_labels, classifier, in_dist=True)
             else: # energy_logits and MSP
@@ -232,9 +237,10 @@ def main():
         precision = torch.load(os.path.join(args.template_dir,  f'{args.model}_precision_{args.in_dataset}_{args.max_count}_{args.normalize}.pt'), map_location= 'cpu').cuda()
         # args.normalize = True
         in_score = get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_dist = True)
-
     log.debug('\n\nError Detection')
 
+    with open(f'score_T_{args.T}_{args.in_dataset}.npy', 'wb') as f:
+            np.save(f, in_score)
     auroc_list, aupr_list, fpr_list = [], [], []
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
@@ -268,7 +274,7 @@ def main():
             else: # non knn scores
                 if args.model in ['CLIP', 'H-CLIP']:
                     out_score = get_ood_scores_clip(args, net, ood_loader, test_labels) 
-                elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear']:
+                elif args.model in ['CLIP-Linear', 'vit-Linear', 'H-CLIP-Linear', 'vit-Linear-H']:
                     if args.score == 'odin_logits':
                         out_score = get_ood_scores_clip_odin(args, net, ood_loader, test_labels, classifier)
                     else: 
@@ -276,9 +282,8 @@ def main():
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
         #debug
-        # with open('score_tt.npy', 'wb') as f:
-        #     np.save(f, in_score)
-        #     np.save(f, out_score)
+        with open(f'score_T_{args.T}_{out_dataset}.npy', 'wb') as f:
+            np.save(f, out_score)
         #end
         plot_distribution(args, in_score, out_score, out_dataset)
         get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list)

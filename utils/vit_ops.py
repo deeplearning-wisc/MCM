@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms, datasets
 from sklearn.utils import shuffle
 from transformers import CLIPModel
+from transformers import ViTForImageClassification
 from models.linear import LinearClassifier
 import torch.backends.cudnn as cudnn
 # from transformers import ViTFeatureExtractor,  ViTModel,  CLIPModel
@@ -19,6 +20,22 @@ def set_model_vit():
     load Huggingface ViT
     '''
     model =  ViTModel.from_pretrained('google/vit-base-patch16-224').cuda()
+    normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
+                                        std=(0.5, 0.5, 0.5)) # for ViT
+    val_preprocess = transforms.Compose([
+            transforms.Resize(224),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            normalize
+        ])
+    
+    return model, val_preprocess
+
+def set_model_vit_huggingface():
+    '''
+    load Huggingface ViT
+    '''
+    model = ViTForImageClassification.from_pretrained('google/vit-large-patch16-224').cuda()
     normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
                                         std=(0.5, 0.5, 0.5)) # for ViT
     val_preprocess = transforms.Compose([
@@ -55,7 +72,7 @@ def set_model_clip(args):
     
     return model, val_preprocess
 
-def set_val_loader_vit(args,  preprocess, kwargs = {'num_workers': 4, 'pin_memory': True}):
+def set_val_loader_vit(args,  preprocess = None, kwargs = {'num_workers': 4, 'pin_memory': True}):
     root = args.root_dir
     if preprocess is None:
         normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
@@ -67,7 +84,7 @@ def set_val_loader_vit(args,  preprocess, kwargs = {'num_workers': 4, 'pin_memor
             normalize
         ])
     if args.in_dataset == "ImageNet":
-        if args.server in ['inst-01', 'inst-04']:
+        if args.server in ['inst-01', 'inst-04', 'inst-03']:
             path = os.path.join('/nobackup','ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
@@ -76,7 +93,7 @@ def set_val_loader_vit(args,  preprocess, kwargs = {'num_workers': 4, 'pin_memor
                 batch_size=args.batch_size, shuffle=False,  **kwargs)
     return val_loader
 
-def set_train_loader_vit(args, preprocess, subset = False, kwargs = {'num_workers': 4, 'pin_memory': True}):
+def set_train_loader_vit(args, preprocess = None, subset = False, kwargs = {'num_workers': 4, 'pin_memory': True}):
     root = args.root_dir
     if preprocess is None: #training mode
         normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), 
@@ -88,7 +105,7 @@ def set_train_loader_vit(args, preprocess, subset = False, kwargs = {'num_worker
             normalize
         ])
     if args.in_dataset == "ImageNet":
-        if args.server in ['inst-01', 'inst-04']:
+        if args.server in ['inst-01', 'inst-04', 'inst-03']:
             path = os.path.join('/nobackup','ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')

@@ -14,7 +14,7 @@ def plot_distribution(args, id_scores, ood_scores, out_dataset):
     # args.score = 'CLS'
     sns.set(style="white", palette="muted")
     palette = ['#A8BAE3', '#55AB83']
-    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.8, norm_hist=True)
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.8)
     # plt.title(f"ID v.s. {out_dataset} {args.score} score")
     # plt.ylim(0, 0.3)
     # plt.xlim(-10, 50)
@@ -24,8 +24,9 @@ def plot_distribution_debug(id_scores, ood_scores, out_dataset):
     # args.score = 'CLS'
     sns.set(style="white", palette="muted")
     palette = ['#A8BAE3', '#55AB83']
-    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.7)
-    plt.title(f"ID v.s. {out_dataset} MIP score")
+    sns.displot({"ID":-1 * id_scores, "OOD": -1 * ood_scores}, label="id", kind = "kde", palette=palette, fill = True, alpha = 0.7, common_norm=False)
+    # plt.title(f"ID v.s. {out_dataset} MIP score")
+    plt.title(f"T=1 (FPR: 25.05%)")
     # plt.ylim(0, 0.3)
     # plt.xlim(-10, 50)
     plt.savefig(f"MIP_{out_dataset}.png", bbox_inches='tight')
@@ -247,9 +248,12 @@ def debug_distribution(id_scores, ood_scores, out_dataset, option = 'max', k = 1
 
 if __name__ == '__main__':
 
-    with open('score_tt.npy', 'rb') as f:
-            in_scores = np.load(f)
+    with open('score_T_0.01_SUN.npy', 'rb') as f:
+            # in_scores = np.load(f)
             out_scores = np.load(f)
+    with open('score_T_0.01_ImageNet-subset.npy', 'rb') as f:
+            # in_scores = np.load(f)
+            in_scores = np.load(f)
     plot_distribution_debug(in_scores, out_scores, out_dataset = "teaser")
 
     # ood_names = ['dtd','places365', 'SUN', 'iNaturalist']

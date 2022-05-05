@@ -14,7 +14,7 @@ __pypackages__/
 *.pdf
 *.npy
 plot_temp/
-
+*.pt
 # Environments
 .env
 .venv
