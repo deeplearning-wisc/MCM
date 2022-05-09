@@ -835,7 +835,7 @@
 833,cobwebbed_0155,spider in a web - photo #.,"['web', 'photo', '#']",OOD
 834,cobwebbed_0156,spider web in the dark.,"['web', 'dark']",OOD
 835,cobwebbed_0157,how to make a spider web.,"['spider', 'web']",OOD
-836,cobwebbed_0158,spiderman cupcakes - i'm going to have to make this for halloween!.,[],OOD
+836,cobwebbed_0158,spiderman cupcakes - i'm going to have to make this for halloween!.,['spiderman cupcakes'],OOD
 837,cobwebbed_0159,how to make a spider's web.,"['spider', 'web']",OOD
 838,cobwebbed_0160,spider web in the dark.,"['web', 'dark']",OOD
 839,cobwebbed_0161,i love the texture of the glass.,"['texture', 'glass']",OOD
@@ -1336,7 +1336,7 @@
 1334,fibrous_0111,foods and food product in a bowl.,"['foods', 'food', 'product', 'bowl']",OOD
 1335,fibrous_0112,foods and food product in a pile.,"['foods', 'food', 'product', 'pile']",OOD
 1336,fibrous_0113,grass blowing in the wind.,"['grass', 'wind']",OOD
-1337,fibrous_0114,this is what the red dye looks like when it's wet.,[],OOD
+1337,fibrous_0114,this is what the red dye looks like when it's wet.,['red dye'],OOD
 1338,fibrous_0115,the texture of the concrete.,"['texture', 'concrete']",OOD
 1339,fibrous_0116,close - up of a dry hay bale.,"['up', 'hay', 'bale']",OOD
 1340,fibrous_0117,how to make a wreath out of feathers.,"['wreath', 'feathers']",OOD
@@ -1549,7 +1549,7 @@
 1547,flecked_0157,i'm in love with this sweater!.,"['love', 'sweater']",OOD
 1548,flecked_0158,garment by person in beautiful frame options and a variety of sizes.,"['garment', 'person', 'frame', 'options', 'variety', 'sizes']",OOD
 1549,flecked_0159,how to wear a blazer with a tie.,"['blazer', 'tie']",OOD
-1550,flecked_0160,"i'm not sure what this is, but it's pretty cool.",[],OOD
+1550,flecked_0160,"i'm not sure what this is, but it's pretty cool.",['None'],OOD
 1551,flecked_0161,a close up of the pattern.,"['close', 'pattern']",OOD
 1552,flecked_0162,garment by person in beautiful frame options and a variety of sizes.,"['garment', 'person', 'frame', 'options', 'variety', 'sizes']",OOD
 1553,flecked_0163,men's blazer with a button down.,"['men', 'blazer', 'button']",OOD
@@ -2364,7 +2364,7 @@
 2362,interlaced_0164,this is an example of a sterling silver plated metal plated coin.,"['example', 'sterling', 'silver', 'metal', 'coin']",OOD
 2363,interlaced_0165,this pattern is available for free download.,"['pattern', 'download']",OOD
 2364,interlaced_0166,this pattern is available for free download.,"['pattern', 'download']",OOD
-2365,interlaced_0167,i've never seen anything like this before!.,[],OOD
+2365,interlaced_0167,i've never seen anything like this before!.,['None'],OOD
 2366,interlaced_0168,a close up of the embroidery.,"['close', 'embroidery']",OOD
 2367,interlaced_0169,"a city is one of the oldest mosques in the world, dating back to the 7th century bce.","['city', 'mosques', 'world', 'century']",OOD
 2368,interlaced_0170,ancient drawings on the wall of a temple.,"['drawings', 'wall', 'temple']",OOD
@@ -2549,7 +2549,7 @@
 2547,lacelike_0028,seamless pattern with white polka dots on a black background.,"['pattern', 'dots', 'background']",OOD
 2548,lacelike_0029,this pattern is available for free download.,"['pattern', 'download']",OOD
 2549,lacelike_0030,i'm in love with this wallpaper!.,"['love', 'wallpaper']",OOD
-2550,lacelike_0031,traditional ornamental floral paisley bandanna.,[],OOD
+2550,lacelike_0031,traditional ornamental floral paisley bandanna.,['ornamental'],OOD
 2551,lacelike_0032,"person, original fine art for person.","['person', 'art', 'person']",OOD
 2552,lacelike_0033,i love the pattern on this fabric.,"['pattern', 'fabric']",OOD
 2553,lacelike_0034,black and white embroidery on a white background.,"['embroidery', 'background']",OOD
@@ -3188,7 +3188,7 @@
 3186,paisley_0077,a close - up of the embroidery on this quilt.,"['close', 'up', 'embroidery', 'quilt']",OOD
 3187,paisley_0078,hand - drawn doodles on the subject of style theme seamless pattern.,"['hand', 'doodles', 'subject', 'style', 'theme', 'seamless', 'pattern']",OOD
 3188,paisley_0079,seamless patterned texture in the form of square tiles.,"['texture', 'form', 'tiles']",OOD
-3189,paisley_0080,traditional ornamental floral paisley bandanna.,[],OOD
+3189,paisley_0080,traditional ornamental floral paisley bandanna.,['ornamental floral'],OOD
 3190,paisley_0081,i'm in love with this pattern!.,"['love', 'pattern']",OOD
 3191,paisley_0082,greeting card featuring the digital art by person.,"['card', 'art', 'person']",OOD
 3192,paisley_0083,the art of painting artist.,"['art', 'artist']",OOD
