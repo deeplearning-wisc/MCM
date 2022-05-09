@@ -7712,7 +7712,7 @@
 7710,c5a0814f0fe37969ae6c9252e560cfe8,biological species growing on the side of the road.,"['species', 'side', 'road']",OOD
 7711,c5a6b579a1ffab855f0b23929b55fce6,biological species in the forest.,"['species', 'forest']",OOD
 7712,c5a920c58184990eed4790b9e102d170,one of the many trees along the coast.,"['trees', 'coast']",OOD
-7713,c5aac90a433190e111ba388fa36c7297,how to care for a rosemary.,[],OOD
+7713,c5aac90a433190e111ba388fa36c7297,how to care for a rosemary.,['rosemary'],OOD
 7714,c5b8da1265b6546bf48642e5fa634817,a fence with barbed wire around it.,"['fence', 'wire']",OOD
 7715,c5bab3a25eae8e4cd4d60014616bd97a,a close up of the flowers.,"['close', 'flowers']",OOD
 7716,c5c8424684281114337296d4ab8d67e8,biological genus is a genus of flowering plants in the family.,"['genus', 'genus', 'plants', 'family']",OOD

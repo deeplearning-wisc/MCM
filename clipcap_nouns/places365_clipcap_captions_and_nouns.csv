@@ -4803,7 +4803,7 @@
 4801,i_igloo_00001017,visitors take photos of the ice sculptures.,"['visitors', 'photos', 'ice', 'sculptures']",OOD
 4802,i_igloo_00001028,4k light leaks footage for different events and projects!.,"['leaks', 'footage', 'events', 'projects']",OOD
 4803,i_igloo_00001069,people in a hole in the snow.,"['people', 'hole', 'snow']",OOD
-4804,i_igloo_00001074,i want one of these!.,[],OOD
+4804,i_igloo_00001074,i want one of these!.,['None'],OOD
 4805,i_igloo_00001090,aircraft model in the snow.,"['aircraft', 'model', 'snow']",OOD
 4806,i_igloo_00001095,tourist attraction in the winter.,"['tourist', 'attraction', 'winter']",OOD
 4807,i_igloo_00001121,tourist attraction in the winter.,"['tourist', 'attraction', 'winter']",OOD
@@ -6717,7 +6717,7 @@
 6715,r_rice_paddy_00000269,rice terraces in the mountains.,"['rice', 'terraces', 'mountains']",OOD
 6716,r_rice_paddy_00000288,one of the many historical buildings.,['buildings'],OOD
 6717,r_rice_paddy_00000330,rice fields in the countryside.,"['rice', 'fields', 'countryside']",OOD
-6718,r_rice_paddy_00000348,"i'm not sure what this is supposed to be, but it looks like it's going to look like this!.",[],OOD
+6718,r_rice_paddy_00000348,"i'm not sure what this is supposed to be, but it looks like it's going to look like this!.",['None'],OOD
 6719,r_rice_paddy_00000414,biological species on the grass.,"['species', 'grass']",OOD
 6720,r_rice_paddy_00000416,silhouette of a girl standing on a hill.,"['silhouette', 'girl', 'hill']",OOD
 6721,r_rice_paddy_00000444,biological species in the marsh.,"['species', 'marsh']",OOD

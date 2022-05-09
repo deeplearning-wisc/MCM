@@ -18,7 +18,7 @@ def process_args():
     #unique setting for each run
     parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100',  
-                        'ImageNet', 'ImageNet10', 'ImageNet20', 'ImageNet30', 'ImageNet100', 'ImageNet-subset'], help='in-distribution dataset')
+                        'ImageNet10_original', 'ImageNet10', ], help='in-distribution dataset')
     parser.add_argument('--name', default = "test_I10_debug", type =str, help = "unique ID for the run")
     #test_imagenet100_10_seed_1  
     parser.add_argument('--seed', default = 4, type =int, help = "random seed")  
@@ -34,7 +34,7 @@ def process_args():
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
-    parser.add_argument('--score', default='ofa_nouns', type=str, choices = ['clipcap_nouns', 'ofa_nouns'], help='score options')  
+    parser.add_argument('--score', default='clipcap_nouns', type=str, choices = ['clipcap_nouns', 'ofa_nouns'], help='score options')  
     # for ODIN score 
     parser.add_argument('--T', default = 1, type =float, help = "temperature") 
     # for fingerprint score 
@@ -64,21 +64,20 @@ def process_args():
     return args
 
 
-
-def get_test_labels(args, loader = None):
-    if args.in_dataset in  ['CIFAR-10', 'CIFAR-100']:
-        test_labels = obtain_cifar_classes(root = args.root_dir, which_cifar = args.in_dataset)
-    elif args.in_dataset ==  "ImageNet10":
-        test_labels = obtain_ImageNet10_classes()
-    elif args.in_dataset ==  "ImageNet20":
-        test_labels = obtain_ImageNet20_classes()
-    elif args.in_dataset ==  "ImageNet30":
-        test_labels = obtain_ImageNet30_classes()
-    elif args.in_dataset ==  "ImageNet100":
-        test_labels = obtain_ImageNet100_classes(loc = os.path.join('./data', 'ImageNet100'))
-    elif args.in_dataset == "ImageNet-subset":
-        test_labels = obtain_ImageNet_subset_classes(loc = os.path.join('./data', f'ImageNet{args.num_imagenet_cls}', args.name))
-    return test_labels
+def obtain_ImageNet10_classes(original = True):
+    if original:
+        class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
+            'antelope' : 'n02422699', 'dog':'n02107574', 'frog':'n01641577',  'snake':'n01728572', 
+            'ship':'n03095699', 'truck':'n03417042'}
+    else:
+        class_dict =   {"warplane": "n04552348", "sports car":"n04285008", 
+            'brambling bird':'n01530575', "Siamese cat": 'n02123597', 
+            'antelope': 'n02422699', 'swiss mountain dog':'n02107574',
+            "bull frog":"n01641577", 'garbage truck':"n03417042",
+            "horse" :"n02389026", "container ship": "n03095699"}
+    # sort by values
+    class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
+    return class_dict.keys()
 
 def main():
     args = process_args()
@@ -97,12 +96,15 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
+    elif args.in_dataset in [ 'ImageNet10', 'ImageNet100']: 
         out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
         # out_datasets = ['ImageNet10']
 
-    test_loader = set_val_loader(args, preprocess)    
-    test_labels = get_test_labels(args, test_loader)
+    test_loader = set_val_loader(args, preprocess)  
+    if args.in_dataset ==  "ImageNet10_original":
+        test_labels = obtain_ImageNet10_classes(original = True)
+    elif args.in_dataset ==  "ImageNet10":
+        test_labels = obtain_ImageNet10_classes()  
 
     
     in_score = get_nouns_scores_clip(args, preprocess, net, test_loader, list(test_labels), args.in_dataset, in_dist = True, filter = "str", debug = False)
@@ -116,7 +118,7 @@ def main():
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
         # if caption as input
-        if args.in_dataset in [ 'ImageNet10','ImageNet20', 'ImageNet30','ImageNet100']:
+        if args.in_dataset in [ 'ImageNet10','ImageNet10_original']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
         else: #for CIFAR
             ood_loader = set_ood_loader_ImageNet(args, preprocess, out_dataset, preprocess)

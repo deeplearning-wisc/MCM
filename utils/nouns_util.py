@@ -31,10 +31,7 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     '''
     set OOD loader for ImageNet scale datasets
     '''
-    if args.score == 'clipcap_nouns':
-        ImageFolder = datasets.ImageFolder
-    elif args.score == 'ofa_nouns':
-        ImageFolder = ImageFolderWithNames
+    ImageFolder = ImageFolderWithNames
     
     if out_dataset == 'iNaturalist':
         testsetout = ImageFolder(root=os.path.join(root, 'iNaturalist'), transform=preprocess)
@@ -98,10 +95,7 @@ def set_val_loader(args, preprocess = None):
             batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset in  ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
         data_dir = os.path.join(root, args.in_dataset, 'val')
-        if args.score == 'clipcap_nouns':
-            dataset = datasets.ImageFolder(data_dir, transform=preprocess)
-        elif args.score == 'ofa_nouns':
-            dataset = ImageFolderWithNames(data_dir, transform = preprocess)
+        dataset = ImageFolderWithNames(data_dir, transform = preprocess)
         val_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
     return val_loader
 
@@ -129,7 +123,11 @@ def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, datase
             if  args.score == 'clipcap_nouns':
                 generated_labels = list(df["Nouns"][i])[0]
             elif args.score == 'ofa_nouns':
-                generated_labels = list(df["Nouns"][df["ImageID"]==image_id])[0] # [['bird', 'snow']] --> ['bird', 'snow']
+                if sum(df["ImageID"]==image_id) == 0:
+                    print("passed")
+                    continue
+                else:
+                    generated_labels = list(df["Nouns"][df["ImageID"]==image_id])[0] # [['bird', 'snow']] --> ['bird', 'snow']
             if debug:
                 mean = torch.tensor(preprocess.transforms[-1].mean)
                 std = torch.tensor(preprocess.transforms[-1].std)
