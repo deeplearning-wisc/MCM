@@ -25,6 +25,7 @@ env.bak/
 venv.bak/
 
 PLOTS/
+figures/
 img_templates/
 img_templates/all_feat/
 #results

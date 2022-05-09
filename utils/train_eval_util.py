@@ -58,13 +58,9 @@ def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False
             dataset = torch.utils.data.Subset(dataset, indices)            
         train_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
-    elif args.in_dataset == "ImageNet10":
+    elif args.in_dataset in ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
         train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'train'), transform=preprocess),
-                batch_size=batch_size, shuffle=shuffle, **kwargs)
-    elif args.in_dataset == "ImageNet100":
-        train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'train'), transform=preprocess),
+                datasets.ImageFolder(os.path.join(root, args.in_dataset, 'train'), transform=preprocess),
                 batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet-subset":
         if args.server in ['inst-01', 'inst-04']:
@@ -137,20 +133,16 @@ def set_val_loader(args, preprocess = None):
         val_loader = torch.utils.data.DataLoader(
                 datasets.ImageFolder(path, transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
-    elif args.in_dataset == "ImageNet10":
+    elif args.in_dataset in  ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ImageNet10', 'val'), transform=preprocess),
-                batch_size=args.batch_size, shuffle=False, **kwargs)
-    elif args.in_dataset == "ImageNet100":
-        val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, 'ImageNet100', 'val'), transform=preprocess),
+                datasets.ImageFolder(os.path.join(root, args.in_dataset, 'val'), transform=preprocess),
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet-subset":
         if args.server in ['inst-01', 'inst-04']:
             path = os.path.join('/nobackup','ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
+        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name)
         val_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == 'ImageNet-dogs': 
@@ -158,7 +150,7 @@ def set_val_loader(args, preprocess = None):
             path = os.path.join('/nobackup','ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, save=False)
+        dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess)
         # dataset = ImageNetDogs(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess, id=args.name, save=False)
         val_loader = torch.utils.data.DataLoader(dataset,
                 batch_size=args.batch_size, shuffle=False, **kwargs)

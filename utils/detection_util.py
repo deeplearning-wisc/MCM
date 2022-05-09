@@ -59,7 +59,7 @@ def set_ood_loader(args, out_dataset, preprocess, root = '/nobackup/dataset_myf'
                                             shuffle=True, num_workers=0)
     return testloaderOut
 
-def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dataset_myf_ImageNet_OOD'):
+def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dataset_myf/ImageNet_OOD_dataset'):
     '''
     set OOD loader for ImageNet scale datasets
     '''
@@ -90,6 +90,17 @@ def set_ood_loader_ImageNet(args, out_dataset, preprocess, root = '/nobackup/dat
     #     testsetout = ImageNetSubset(num_cls[out_dataset], path, train=False, seed=args.seed, transform=preprocess, id=args.name, save=False)
     elif out_dataset == 'ImageNet10':
         testsetout = datasets.ImageFolder(os.path.join(args.root_dir, 'ImageNet10', 'train'), transform=preprocess)
+    elif out_dataset == 'ImageNet20':
+        testsetout = datasets.ImageFolder(os.path.join(args.root_dir, 'ImageNet20', 'val'), transform=preprocess)
+    elif out_dataset == 'ImageNet30':
+        testsetout = datasets.ImageFolder(os.path.join(args.root_dir, 'ImageNet30', 'val'), transform=preprocess)
+    elif out_dataset == 'ImageNet100':
+        if args.server in ['inst-01', 'inst-04']:
+            path = os.path.join('/nobackup','ImageNet')
+        elif args.server in ['galaxy-01', 'galaxy-02']:
+            path = os.path.join(root, 'ILSVRC-2012')
+        id1 = 'test_imagenet100_10_seed_4'
+        testsetout = ImageNetSubset(100, path, train=False, seed=args.seed, transform=preprocess, id=id1)
     # if len(testsetout) > 10000: 
     #     testsetout = torch.utils.data.Subset(testsetout, np.random.choice(len(testsetout), 10000, replace=False))
     testloaderOut = torch.utils.data.DataLoader(testsetout, batch_size=args.batch_size,

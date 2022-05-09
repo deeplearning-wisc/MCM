@@ -6,7 +6,7 @@ import clip
 from scipy import stats
 from models.linear import LinearClassifier
 # from torchvision.transforms import transforms
-from utils.common import obtain_ImageNet100_classes, obtain_ImageNet10_classes, obtain_ImageNet_classes, obtain_ImageNet_dogs_classes, obtain_ImageNet_subset_classes, obtain_cifar_classes, setup_seed, get_num_cls
+from utils.common import *
 from utils.detection_util import *
 from utils.file_ops import prepare_dataframe, save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
@@ -18,12 +18,13 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
-    parser.add_argument('--in_dataset', default='ImageNet-subset', type=str, 
-                        choices = ['CIFAR-10', 'CIFAR-100', 
-                        'ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
+    parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
+                        choices = ['CIFAR-10', 'CIFAR-100',  
+                        'ImageNet', 'ImageNet10', 'ImageNet20', 'ImageNet30', 'ImageNet100', 'ImageNet-subset','ImageNet-dogs', 
                         'bird200', 'car196','flower102','food101','pet37'], help='in-distribution dataset')
-    parser.add_argument('--name', default = "test_imagenet100_10_seed_7", type =str, help = "unique ID for the run")  
-    parser.add_argument('--seed', default = 7, type =int, help = "random seed")  
+    parser.add_argument('--name', default = "test_I10_debug", type =str, help = "unique ID for the run")
+    #test_imagenet100_10_seed_1  
+    parser.add_argument('--seed', default = 4, type =int, help = "random seed")  
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
     parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
@@ -35,13 +36,13 @@ def process_args():
     parser.add_argument('--model', default='CLIP', choices = ['CLIP','CLIP-Linear', 'H-CLIP', 'H-CLIP-Linear', 'vit', 'vit-Linear',  'vit-Linear-H'], type=str, help='model architecture')
     parser.add_argument('--CLIP_ckpt', type=str, default='ViT-B/16',
                         choices=['ViT-B/32', 'ViT-B/16', 'RN50x4', 'ViT-L/14'], help='which pretrained img encoder to use')
-    #fine-tune ckpt
-    parser.add_argument('--finetune_ckpt', default =None, type=str,
-                             help='ckpt location for fine-tuned clip')
+    # #fine-tune ckpt
+    # parser.add_argument('--finetune_ckpt', default =None, type=str,
+    #                          help='ckpt location for fine-tuned clip')
     #[linear prob clip] classifier loading
-    parser.add_argument('--epoch', default ="40", type=str,
+    parser.add_argument('--epoch', default ="10", type=str,
                              help='which epoch to test')
-    parser.add_argument('--classifier_ckpt', default ="ImageNet_google_vit-base-patch16-224-in21k_lr_0.1_decay_0_bsz_512_test_correctness_warm", type=str,
+    parser.add_argument('--classifier_ckpt', default ="bird200_ViT-B-16_lr_0.1_decay_0_bsz_512_test_I20_warm", type=str,
                              help='which classifier to load')
     parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     #detection setting  
@@ -49,12 +50,13 @@ def process_args():
                                                                         'energy', 'entropy', 'odin', # img->text encoder; feature space
                                                                         'MIP', 'MIPT','MIPT-wordnet', 'fingerprint', 'MIP_topk', # img->text encoder; feature space
                                                                         'MSP', 'energy_logits', 'odin_logits', # img encoder only; logit space
-                                                                        'MIPCT', 'MIPCI', 'retrival', 'nouns' # text->img encoder; feature space
+                                                                        'MIPCT', 'MIPCI', 'retrival', # text->img encoder; feature space
+                                                                        'nouns', 'nouns_OFA'
                                                                         ], help='score options')  
     # for knn score 
     parser.add_argument('--K', default = 10, type =int, help = "# of nearest neighbor")
     # for Mahalanobis score
-    parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
+    parser.add_argument('--normalize', type = bool, default = True, help='whether use normalized features for Maha score')
     parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = '/nobackup/img_templates', help='the loc of stored classwise mean and precision matrix')
     
@@ -73,12 +75,12 @@ def process_args():
 
     args.n_cls = get_num_cls(args)
     
-    if args.server in ['inst-01', 'inst-04']:
+    if args.server in ['inst-01', 'inst-03', 'inst-04']:
         args.root_dir = '/nobackup/dataset_myf' #save dir of dataset
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['galaxy-01', 'galaxy-02']:
         args.root_dir = '/nobackup-slow/dataset'
-        args.save_dir = f'/nobackup/zcai/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
+        args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}' # save dir of linear classsifier
     elif args.server in ['A100']:
         args.root_dir = ''
 
@@ -101,6 +103,10 @@ def get_test_labels(args, loader = None):
         test_labels = obtain_ImageNet_classes(loc = os.path.join('data','ImageNet'), option = 'clean')
     elif args.in_dataset ==  "ImageNet10":
         test_labels = obtain_ImageNet10_classes()
+    elif args.in_dataset ==  "ImageNet20":
+        test_labels = obtain_ImageNet20_classes()
+    elif args.in_dataset ==  "ImageNet30":
+        test_labels = obtain_ImageNet30_classes()
     elif args.in_dataset ==  "ImageNet100":
         test_labels = obtain_ImageNet100_classes(loc = os.path.join('./data', 'ImageNet100'))
     elif args.in_dataset == "ImageNet-subset":
@@ -168,10 +174,16 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in ['ImageNet','ImageNet10', 'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
-        out_datasets =  ['ImageNet10', 'SUN', 'places365','dtd', 'iNaturalist']
+    elif args.in_dataset in ['ImageNet',  'ImageNet100', 'ImageNet-subset',  'car196','flower102','food101','pet37']: 
+        out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
         # out_datasets =  ['SUN']
         # out_datasets = ['ImageNet10']
+    elif args.in_dataset  in ['ImageNet10']:
+        out_datasets = ['ImageNet20']
+        # out_datasets = ['ImageNet20']
+        # out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
+    elif args.in_dataset  in ['ImageNet20', 'ImageNet30']:
+        out_datasets = ['ImageNet10']
     elif args.in_dataset == 'bird200':
         out_datasets = ['placesbg']
     elif args.in_dataset == 'ImageNet-dogs':
@@ -255,7 +267,7 @@ def main():
             ood_text_df = prepare_dataframe(captions_dir, dataset_name = out_dataset) 
             out_score = get_retrival_scores_clip(args, net, ood_text_df, preprocess, num_per_cls = 10, generate = False, template_dir = 'img_templates')
         else: # image as input 
-            if args.in_dataset in ['ImageNet', 'ImageNet10', 'ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
+            if args.in_dataset in ['ImageNet', 'ImageNet10','ImageNet20', 'ImageNet30','ImageNet100', 'ImageNet-subset', 'bird200', 'car196','flower102','food101','pet37']:
                 ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
             elif args.in_dataset == 'ImageNet-dogs':
                 ood_loader = set_ood_loader_ImageNet_dogs(args, preprocess)
@@ -282,8 +294,8 @@ def main():
         log.debug(f"in scores: {stats.describe(in_score)}")
         log.debug(f"out scores: {stats.describe(out_score)}")
         #debug
-        with open(f'score_T_{args.T}_{out_dataset}.npy', 'wb') as f:
-            np.save(f, out_score)
+        # with open(f'score_T_{args.T}_{out_dataset}.npy', 'wb') as f:
+        #     np.save(f, out_score)
         #end
         plot_distribution(args, in_score, out_score, out_dataset)
         get_and_print_results(args, log, in_score, out_score, auroc_list, aupr_list, fpr_list)

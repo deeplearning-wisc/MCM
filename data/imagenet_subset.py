@@ -5,7 +5,7 @@ from PIL import Image
 
 class ImageNetSubset(Dataset):
 
-    def __init__(self, n_cls, root, class_list_loc='./data', id='', save=True, train=True, transform=None, target_transform=None, seed=0):
+    def __init__(self, n_cls, root, class_list_loc='./data', id='', train=True, transform=None, target_transform=None, seed=0):
         npr.seed(seed)
         self.n_cls = int(n_cls)
         self.split = 'train' if train else 'val'
@@ -18,10 +18,9 @@ class ImageNetSubset(Dataset):
             for image_id in os.listdir(os.path.join(root, self.split, cls))]
         print(f'ImageNet {self.split} subset with {len(self.class_list)} classes, {len(self.data)} samples')
 
-        if save:
-            save_path = os.path.join(class_list_loc, f'ImageNet{n_cls}', id)
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
+        save_path = os.path.join(class_list_loc, f'ImageNet{n_cls}', id)
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
             with open(os.path.join(save_path, 'class_list.txt'), 'w+') as f:
                 f.writelines([line + '\n' for line in self.class_list])
 

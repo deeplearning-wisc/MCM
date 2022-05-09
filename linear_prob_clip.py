@@ -148,10 +148,10 @@ def validate(args, val_loader, featurizer, classifier, criterion, log):
 def parse_option():
     parser = argparse.ArgumentParser('argument for playing with CLIP')
     #dataset 
-    parser.add_argument('--in_dataset', type=str, default='food101',
+    parser.add_argument('--in_dataset', type=str, default='bird200',
                         choices=['CIFAR-10', 'CIFAR-100','ImageNet10','ImageNet100', 'ImageNet', 'ImageNet-dogs', 'food101'], help='img dataset')
     parser.add_argument('--num_imagenet_cls', type=int, default=40, help='Number of classes for imagenet subset')
-    parser.add_argument('--gpu', default=1, type=int,
+    parser.add_argument('--gpu', default=7, type=int,
                         help='the GPU indice to use')
     #model setup
     parser.add_argument('--model', type=str, default='clip',
@@ -164,7 +164,7 @@ def parse_option():
     parser.add_argument('--normalize', action='store_true',
                         help='whether the feautures are normalized')
     #optimization basic
-    parser.add_argument('--epochs', type=int, default=40,
+    parser.add_argument('--epochs', type=int, default=20,
                         help='number of training epochs')
     parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='init lr')
@@ -175,8 +175,8 @@ def parse_option():
     parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
     # if linear lr decay (default)
-    parser.add_argument('--lr_decay_epochs', type=str, default='20,30,35',
-                        help='where to decay lr, can be a list')
+    parser.add_argument('--lr_decay_epochs', type=str, default='10, 15',
+                        help='where to decay lr, 20,30,35 for 40 epochs')
     parser.add_argument('--lr_decay_rate', type=float, default=0.2,
                         help='decay rate for learning rate')
     #if cosine lr decay
@@ -190,9 +190,9 @@ def parse_option():
                         help='print frequency (# of batch)')
     parser.add_argument('--save_freq', type=int, default=10,
                         help='save frequency (# of epoch)')
-    parser.add_argument('--unique_id', type=str, default='test_place_holder',
+    parser.add_argument('--unique_id', type=str, default='test_I20',
                         help='id of the run')
-    parser.add_argument("--server", type=str, default='galaxy-02', help="run on which server")
+    parser.add_argument("--server", type=str, default='inst-03', help="run on which server")
     parser.add_argument('--seed', default = 1, type =int, help = "random seed")
     args = parser.parse_args()
 
@@ -218,7 +218,7 @@ def parse_option():
                     1 + math.cos(math.pi * args.warm_epochs / args.epochs)) / 2
         else:
             args.warmup_to = args.learning_rate
-    if args.server in ['inst-01', 'inst-04']:
+    if args.server in ['inst-01', 'inst-03', 'inst-04']:
         args.save_dir = f'/nobackup/checkpoints/clip_linear/{args.in_dataset}'
         args.root_dir = '/nobackup/dataset_myf'
     if args.server in ['galaxy-01']:
@@ -273,6 +273,8 @@ def linear_probe_sklearn():
     # set up training 
     if args.in_dataset in ['CIFAR-10', 'ImageNet10']:
         args.n_cls = 10
+    if args.in_dataset in ['ImageNet20']:
+        args.n_cls = 20
     elif args.in_dataset in ['CIFAR-100', 'ImageNet100']:
         args.n_cls = 100
     elif args.in_dataset == "ImageNet":

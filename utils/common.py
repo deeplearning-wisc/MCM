@@ -44,12 +44,37 @@ def obtain_ImageNet_classes(loc, option = 'clean'):
     return imagenet_cls
 
 def obtain_ImageNet10_classes(loc = None):
-    class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
-        'antelope' : 'n02422699', 'dog':'n02107574', 'frog':'n01641577',  'snake':'n01728572', 
-        'ship':'n03095699', 'truck':'n03417042'}
+    # class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
+    #     'antelope' : 'n02422699', 'dog':'n02107574', 'frog':'n01641577',  'snake':'n01728572', 
+    #     'ship':'n03095699', 'truck':'n03417042'}
+
+    class_dict =   {"warplane": "n04552348", "sports car":"n04285008", 
+        'brambling bird':'n01530575', "Siamese cat": 'n02123597', 
+        'antelope': 'n02422699', 'swiss mountain dog':'n02107574',
+         "bull frog":"n01641577", 'garbage truck':"n03417042",
+         "horse" :"n02389026", "container ship": "n03095699"}
     # sort by values
     class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
     return class_dict.keys()
+
+def obtain_ImageNet20_classes(loc = None):
+
+    class_dict =   {"n04147183": "sailboat", "n02951358": "canoe" , "n02782093": "balloon", "n04389033": "tank", "n03773504": "missile",
+    "n02917067": "bullet train", "n02317335": "starfish", "n01632458":"spotted salamander", "n01630670":"common newt", "n01631663": "zebra",
+    "n02391049": "frilled lizard", "n01693334":"green lizard", "n01697457": "African crocodile", "n02120079": "Arctic fox", "n02114367": "timber wolf",  
+    "n02132136": "brown bear", "n03785016": "moped", "n04310018": "steam locomotive", "n04266014": "space shuttle", "n04252077": "snowmobile"}
+    # sort by values
+    class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[0])}
+    return class_dict.values()
+
+
+def obtain_ImageNet30_classes():
+    all_labels = ['stingray', 'american_alligator', 'dragonfly', 'airliner', 
+    'ambulance', 'banjo', 'barn', 'bikini', 'rotary_dial_telephone', 'digital_clock',
+     'dumbbell', 'forklift', 'goblet', 'grand_piano', 'hourglass', 'manhole_cover', 
+     'mosque', 'nail', 'parking_meter', 'pillow', 'revolver', 'schooner', 'snowmobile', 
+     'soccer_ball', 'tank', 'toaster', 'hotdog', 'strawberry', 'volcano', 'acorn']
+    return all_labels
 
 def obtain_ImageNet100_classes(loc):
     # sort by values
@@ -99,6 +124,7 @@ def obtain_ImageNet_dogs_classes(args, loc):
 def get_num_cls(args):    
     NUM_CLS_DICT = {
         'CIFAR-10': 10, 'ImageNet10': 10,
+        'ImageNet20': 20, 'ImageNet30': 30,
         'pet37':37,
         'ImageNet100': 100, 'CIFAR-100': 100,
         'food101': 101, 'flower102': 102,
