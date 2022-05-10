@@ -3,8 +3,11 @@ import shutil
 from tqdm import tqdm
 import json
 
-imagenet_loc = '/nobackup-slow/dataset/ILSVRC-2012'
-imagenet100_loc = '/nobackup-slow/dataset/ImageNet100'
+# imagenet_loc = '/nobackup-slow/dataset/ILSVRC-2012'
+# imagenet100_loc = '/nobackup-slow/dataset/ImageNet100'
+
+imagenet_loc = '/nobackup/ImageNet'
+imagenet100_loc = '/nobackup/dataset_myf/ImageNet40'
 
 # for split in ['train', 'val']:
 #     with open(f'./ImageNet100/{split}_100.txt') as file:

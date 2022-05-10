@@ -12,21 +12,31 @@ from utils.file_ops import  save_as_dataframe, setup_log
 from utils.plot_util import plot_distribution
 # sys.path.append(os.path.dirname(__file__))
 
+def get_num_cls(args):    
+    NUM_CLS_DICT = {
+        'CIFAR-10': 10, 'ImageNet10': 10, 'ImageNet10_original': 10,
+        'ImageNet20': 20, 'ImageNet30': 30,
+    }
+    if args.in_dataset in ['ImageNet-subset', 'ImageNet-dogs']:
+        n_cls = args.num_imagenet_cls
+    else:
+        n_cls = NUM_CLS_DICT[args.in_dataset]
+    return n_cls
+
 def process_args():
     parser = argparse.ArgumentParser(description='Evaluates a CIFAR OOD Detector',
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #unique setting for each run
     parser.add_argument('--in_dataset', default='ImageNet10', type=str, 
                         choices = ['CIFAR-10', 'CIFAR-100',  
-                        'ImageNet10_original', 'ImageNet10', ], help='in-distribution dataset')
-    parser.add_argument('--name', default = "test_I10_debug", type =str, help = "unique ID for the run")
+                        'ImageNet10_original', 'ImageNet10', 'ImageNet20'], help='in-distribution dataset')
+    parser.add_argument('--name', default = "test_I20_new_str_filter", type =str, help = "unique ID for the run")
     #test_imagenet100_10_seed_1  
     parser.add_argument('--seed', default = 4, type =int, help = "random seed")  
     parser.add_argument('--server', default = 'inst-01', type =str, 
                 choices = ['inst-01', 'inst-04', 'A100', 'galaxy-01', 'galaxy-02'], help = "on which server the experiment is conducted")
-    parser.add_argument('--gpu', default=7, type=int, help='the GPU indice to use')
+    parser.add_argument('--gpu', default=5, type=int, help='the GPU indice to use')
     # batch size. num of classes
-    parser.add_argument('--num_imagenet_cls', type=int, default=100, help='Number of classes for imagenet subset')
     parser.add_argument('-b', '--batch-size', default=1, type=int,
                             help='mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip]')
     #encoder loading
@@ -55,14 +65,20 @@ def process_args():
     elif args.server in ['A100']:
         args.root_dir = ''
 
-    if args.in_dataset == 'ImageNet-subset':
-        args.log_directory = f"results/ImageNet{args.num_imagenet_cls}/{args.score}/{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
-    else:
-        args.log_directory = f"nouns_results/{args.in_dataset}/{args.score}/{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
+    args.log_directory = f"nouns_results/{args.in_dataset}/{args.score}/{args.CLIP_ckpt}_T_{args.T}_ID_{args.name}"
     os.makedirs(args.log_directory, exist_ok= True)
 
     return args
 
+def obtain_ImageNet20_classes(loc = None):
+
+    class_dict =   {"n04147183": "sailboat", "n02951358": "canoe" , "n02782093": "balloon", "n04389033": "tank", "n03773504": "missile",
+    "n02917067": "bullet train", "n02317335": "starfish", "n01632458":"spotted salamander", "n01630670":"common newt", "n01631663": "zebra",
+    "n02391049": "frilled lizard", "n01693334":"green lizard", "n01697457": "African crocodile", "n02120079": "Arctic fox", "n02114367": "timber wolf",  
+    "n02132136": "brown bear", "n03785016": "moped", "n04310018": "steam locomotive", "n04266014": "space shuttle", "n04252077": "snowmobile"}
+    # sort by values
+    class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[0])}
+    return class_dict.values()
 
 def obtain_ImageNet10_classes(original = True):
     if original:
@@ -75,6 +91,11 @@ def obtain_ImageNet10_classes(original = True):
             'antelope': 'n02422699', 'swiss mountain dog':'n02107574',
             "bull frog":"n01641577", 'garbage truck':"n03417042",
             "horse" :"n02389026", "container ship": "n03095699"}
+        # class_dict =   {'aircraft': "n04552348", "car":"n04285008", 
+        #     'bird':'n01530575', "cat": 'n02123597', 
+        #     'antelope': 'n02422699', 'dog':'n02107574',
+        #     "frog":"n01641577", 'truck':"n03417042",
+        #     "horse" :"n02389026", "ship": "n03095699"}
     # sort by values
     class_dict =  {k: v for k, v in sorted(class_dict.items(), key=lambda item: item[1])}
     return class_dict.keys()
@@ -96,7 +117,7 @@ def main():
         log.debug('\nUsing CIFAR-100 as typical data')
         # out_datasets = [ 'SVHN', 'places365','LSUN_resize', 'iSUN', 'dtd', 'LSUN', 'cifar10']
         out_datasets =  ['places365','SVHN', 'iSUN', 'dtd', 'LSUN', 'CIFAR-10']
-    elif args.in_dataset in [ 'ImageNet10', 'ImageNet100']: 
+    elif args.in_dataset in [ 'ImageNet10', 'ImageNet10_original', 'ImageNet20']: 
         out_datasets =  ['SUN', 'places365','dtd', 'iNaturalist']
         # out_datasets = ['ImageNet10']
 
@@ -104,7 +125,9 @@ def main():
     if args.in_dataset ==  "ImageNet10_original":
         test_labels = obtain_ImageNet10_classes(original = True)
     elif args.in_dataset ==  "ImageNet10":
-        test_labels = obtain_ImageNet10_classes()  
+        test_labels = obtain_ImageNet10_classes(original = False)  
+    elif args.in_dataset ==  "ImageNet20":
+        test_labels = obtain_ImageNet20_classes()  
 
     
     in_score = get_nouns_scores_clip(args, preprocess, net, test_loader, list(test_labels), args.in_dataset, in_dist = True, filter = "str", debug = False)
@@ -118,7 +141,7 @@ def main():
     for out_dataset in out_datasets:
         log.debug(f"Evaluting OOD dataset {out_dataset}")
         # if caption as input
-        if args.in_dataset in [ 'ImageNet10','ImageNet10_original']:
+        if args.in_dataset in [ 'ImageNet10','ImageNet10_original', 'ImageNet20']:
             ood_loader = set_ood_loader_ImageNet(args, out_dataset, preprocess, root= os.path.join(args.root_dir,'ImageNet_OOD_dataset'))
         else: #for CIFAR
             ood_loader = set_ood_loader_ImageNet(args, preprocess, out_dataset, preprocess)

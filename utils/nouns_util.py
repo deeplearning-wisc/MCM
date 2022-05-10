@@ -93,7 +93,7 @@ def set_val_loader(args, preprocess = None):
         val_loader = torch.utils.data.DataLoader(
             datasets.CIFAR100(os.path.join(root, 'cifar100'), train=False, download=True,transform=preprocess),
             batch_size=args.batch_size, shuffle=False, **kwargs)
-    elif args.in_dataset in  ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
+    elif args.in_dataset in  ["ImageNet10", "ImageNet10_original", "ImageNet20", "ImageNet100"]:
         data_dir = os.path.join(root, args.in_dataset, 'val')
         dataset = ImageFolderWithNames(data_dir, transform = preprocess)
         val_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
@@ -117,11 +117,12 @@ def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, datase
     # text_dataset = TextDataset(df["Nouns"], df["Type"])
     # text_loader = torch.utils.data.DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False)
     bz = image_loader.batch_size
+    total_filtered = 0
     with torch.no_grad():
         for i, (images, labels, image_ids) in enumerate(tqdm(image_loader)):
             image_id = image_ids[0]
             if  args.score == 'clipcap_nouns':
-                generated_labels = list(df["Nouns"][i])[0]
+                generated_labels = list(df["Nouns"][i])
             elif args.score == 'ofa_nouns':
                 if sum(df["ImageID"]==image_id) == 0:
                     print("passed")
@@ -138,8 +139,12 @@ def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, datase
                 break
 
             if filter == "str":
+                original_len = len(generated_labels)
                 generated_labels = [label for label in generated_labels if label not in ID_labels ]
+                if len(generated_labels) < original_len:
+                    total_filtered +=1
             all_labels = ID_labels + generated_labels
+            #print(all_labels)
             text_features = net.encode_text(torch.cat([clip.tokenize(f"a photo of a {c}") for c in all_labels]).cuda()).float()
             text_features /= text_features.norm(dim=-1, keepdim=True)
             
@@ -156,5 +161,5 @@ def get_nouns_scores_clip(args, preprocess, net, image_loader, ID_labels, datase
             score = 1 -np.sum(smax[0, : args.n_cls])
             # print(score)
             _score.append(score) 
-
+        print(total_filtered)
         return np.array(_score)
