@@ -103,15 +103,15 @@ ID = False
 #     subset = torch.utils.data.Subset(dataset, sorted_idx)  
 
 if ID:
-    subset = datasets.ImageFolder(os.path.join('/nobackup/dataset_myf', 'custom_id', 'val'),  transform=preprocess)
+    dataset = datasets.ImageFolder(os.path.join('/nobackup/dataset_myf', 'custom_id', 'val'),  transform=preprocess)
 else:
-    random.seed(7)
+    # random.seed(7)
     #dataset = datasets.ImageFolder(os.path.join('/nobackup/dataset_myf', 'ImageNet20', 'val'),  transform=preprocess)
     dataset = datasets.ImageFolder(os.path.join( '/nobackup/dataset_myf/ImageNet_OOD_dataset', 'custom'),  transform=preprocess)
-    indices = np.random.choice(np.arange(len(dataset)), 8, replace = False )
-    subset = torch.utils.data.Subset(dataset, indices)  
+    # indices = np.random.choice(np.arange(len(dataset)), 8, replace = False )
+    # subset = torch.utils.data.Subset(dataset, indices)  
 
-loader = torch.utils.data.DataLoader(subset,
+loader = torch.utils.data.DataLoader(dataset,
                     batch_size=1, shuffle=False)
 
     
