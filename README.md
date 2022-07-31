@@ -23,10 +23,9 @@ Please download ImageNet from the link; the other datasets can be automatically 
 CLIP_OOD
 |-- datasets
     |-- ImageNet
-    |-- ImageNet-10
-        |-- classlist.csv
-    |-- ImageNet-20
-        |-- classlist.csv
+    |-- CUB-200
+    |-- Food-101
+    ...
 ```
 
 # Experiments

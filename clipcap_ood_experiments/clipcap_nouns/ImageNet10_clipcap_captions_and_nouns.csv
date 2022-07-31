@@ -1,0 +1,501 @@
+,ImageID,Caption,Nouns,Type
+0,ILSVRC2012_val_00000651,biological species in the snow.,"['species', 'snow']",OOD
+1,ILSVRC2012_val_00000747,biological species on a branch.,"['species', 'branch']",OOD
+2,ILSVRC2012_val_00002023,biological species in the snow.,"['species', 'snow']",OOD
+3,ILSVRC2012_val_00002191,biological species on the ground.,"['species', 'ground']",OOD
+4,ILSVRC2012_val_00002425,biological species in the snow.,"['species', 'snow']",OOD
+5,ILSVRC2012_val_00002730,biological species on a feeder.,"['species', 'feeder']",OOD
+6,ILSVRC2012_val_00004006,bird on the roof of a house.,"['bird', 'roof', 'house']",OOD
+7,ILSVRC2012_val_00006526,biological species perched on a branch.,"['species', 'branch']",OOD
+8,ILSVRC2012_val_00006763,biological species on a branch.,"['species', 'branch']",OOD
+9,ILSVRC2012_val_00010393,biological species in a tree.,"['species', 'tree']",OOD
+10,ILSVRC2012_val_00010689,biological species on a branch.,"['species', 'branch']",OOD
+11,ILSVRC2012_val_00010999,biological species in the snow.,"['species', 'snow']",OOD
+12,ILSVRC2012_val_00011249,biological species in a bird feeder.,"['species', 'bird', 'feeder']",OOD
+13,ILSVRC2012_val_00012814,biological species on a branch.,"['species', 'branch']",OOD
+14,ILSVRC2012_val_00013512,biological species in the snow.,"['species', 'snow']",OOD
+15,ILSVRC2012_val_00015223,biological species perched on a branch.,"['species', 'branch']",OOD
+16,ILSVRC2012_val_00016476,biological species in the snow.,"['species', 'snow']",OOD
+17,ILSVRC2012_val_00016548,biological species in the snow.,"['species', 'snow']",OOD
+18,ILSVRC2012_val_00020889,biological species on a branch.,"['species', 'branch']",OOD
+19,ILSVRC2012_val_00023441,biological species in the snow.,"['species', 'snow']",OOD
+20,ILSVRC2012_val_00023698,biological species in the snow.,"['species', 'snow']",OOD
+21,ILSVRC2012_val_00023766,flock of birds flying in the sky.,"['flock', 'birds', 'sky']",OOD
+22,ILSVRC2012_val_00025347,biological species in the snow.,"['species', 'snow']",OOD
+23,ILSVRC2012_val_00025488,biological species on the ground.,"['species', 'ground']",OOD
+24,ILSVRC2012_val_00026673,biological species on a branch.,"['species', 'branch']",OOD
+25,ILSVRC2012_val_00026784,biological species in a fountain.,"['species', 'fountain']",OOD
+26,ILSVRC2012_val_00027374,biological species on a branch.,"['species', 'branch']",OOD
+27,ILSVRC2012_val_00027507,biological species in the snow.,"['species', 'snow']",OOD
+28,ILSVRC2012_val_00027619,biological species perched on a branch.,"['species', 'branch']",OOD
+29,ILSVRC2012_val_00028902,biological species in the grass.,"['species', 'grass']",OOD
+30,ILSVRC2012_val_00030224,biological species in the snow.,"['species', 'snow']",OOD
+31,ILSVRC2012_val_00033092,biological species perched on a branch.,"['species', 'branch']",OOD
+32,ILSVRC2012_val_00033580,biological species on a branch.,"['species', 'branch']",OOD
+33,ILSVRC2012_val_00034018,biological species on a bird feeder.,"['species', 'bird', 'feeder']",OOD
+34,ILSVRC2012_val_00034864,biological species in a tree.,"['species', 'tree']",OOD
+35,ILSVRC2012_val_00035540,biological species in the snow.,"['species', 'snow']",OOD
+36,ILSVRC2012_val_00035872,biological species in the snow.,"['species', 'snow']",OOD
+37,ILSVRC2012_val_00037116,biological species in a pine tree.,"['species', 'pine', 'tree']",OOD
+38,ILSVRC2012_val_00037748,biological species in the snow.,"['species', 'snow']",OOD
+39,ILSVRC2012_val_00038895,biological species on a branch.,"['species', 'branch']",OOD
+40,ILSVRC2012_val_00043788,biological species in the snow.,"['species', 'snow']",OOD
+41,ILSVRC2012_val_00045172,biological species on a branch.,"['species', 'branch']",OOD
+42,ILSVRC2012_val_00045389,biological species in the snow.,"['species', 'snow']",OOD
+43,ILSVRC2012_val_00045415,biological species in the snow.,"['species', 'snow']",OOD
+44,ILSVRC2012_val_00045611,biological species in the snow.,"['species', 'snow']",OOD
+45,ILSVRC2012_val_00046751,biological species on the trail.,"['species', 'trail']",OOD
+46,ILSVRC2012_val_00046833,biological species on a feeder.,"['species', 'feeder']",OOD
+47,ILSVRC2012_val_00047878,biological species on a feeder.,"['species', 'feeder']",OOD
+48,ILSVRC2012_val_00047914,biological species in the snow.,"['species', 'snow']",OOD
+49,ILSVRC2012_val_00049568,biological species on a branch.,"['species', 'branch']",OOD
+50,ILSVRC2012_val_00001652,a close - up of biological species.,"['close', 'up', 'species']",OOD
+51,ILSVRC2012_val_00003748,frog sitting on a rock.,"['frog', 'rock']",OOD
+52,ILSVRC2012_val_00004613,close up of a frog.,['frog'],OOD
+53,ILSVRC2012_val_00004945,biological species feeding on a fish.,"['species', 'fish']",OOD
+54,ILSVRC2012_val_00005045,close - up of a green frog.,"['close', 'up', 'frog']",OOD
+55,ILSVRC2012_val_00006409,biological species in the garden.,"['species', 'garden']",OOD
+56,ILSVRC2012_val_00009563,biological species in the garden.,"['species', 'garden']",OOD
+57,ILSVRC2012_val_00010287,biological species on a branch.,"['species', 'branch']",OOD
+58,ILSVRC2012_val_00011664,close - up of a green frog.,"['close', 'up', 'frog']",OOD
+59,ILSVRC2012_val_00012151,frogs that look like other animals - photo #.,"['frogs', 'animals', 'photo', '#']",OOD
+60,ILSVRC2012_val_00012558,biological species in a tree.,"['species', 'tree']",OOD
+61,ILSVRC2012_val_00013974,frogs that look like other animals - photo #.,"['frogs', 'animals', 'photo', '#']",OOD
+62,ILSVRC2012_val_00014227,biological species basking in the sun.,"['species', 'sun']",OOD
+63,ILSVRC2012_val_00014735,a close - up of biological species.,"['close', 'up', 'species']",OOD
+64,ILSVRC2012_val_00016782,biological species on a branch.,"['species', 'branch']",OOD
+65,ILSVRC2012_val_00017669,biological species on a rock.,"['species', 'rock']",OOD
+66,ILSVRC2012_val_00018160,biological species basking in the sun.,"['species', 'sun']",OOD
+67,ILSVRC2012_val_00018339,biological species on a log.,"['species', 'log']",OOD
+68,ILSVRC2012_val_00018481,biological species in a pond.,"['species', 'pond']",OOD
+69,ILSVRC2012_val_00018512,photo of a frog on a concrete wall.,"['photo', 'frog', 'wall']",OOD
+70,ILSVRC2012_val_00018754,close - up shot of a small lake in the forest.,"['shot', 'lake', 'forest']",OOD
+71,ILSVRC2012_val_00019578,close - up of a green frog.,"['close', 'up', 'frog']",OOD
+72,ILSVRC2012_val_00020916,biological species in a pond.,"['species', 'pond']",OOD
+73,ILSVRC2012_val_00021611,biological species on a log.,"['species', 'log']",OOD
+74,ILSVRC2012_val_00022052,biological species in a pond.,"['species', 'pond']",OOD
+75,ILSVRC2012_val_00023308,biological species in a garden pond.,"['species', 'garden', 'pond']",OOD
+76,ILSVRC2012_val_00024938,biological species by person on 500px.,"['species', 'person', '500px']",OOD
+77,ILSVRC2012_val_00025633,biological species in a pond.,"['species', 'pond']",OOD
+78,ILSVRC2012_val_00026059,biological species in a pond.,"['species', 'pond']",OOD
+79,ILSVRC2012_val_00026213,biological species in the grass.,"['species', 'grass']",OOD
+80,ILSVRC2012_val_00027869,biological species basking in the sun.,"['species', 'sun']",OOD
+81,ILSVRC2012_val_00028041,biological species on a rock.,"['species', 'rock']",OOD
+82,ILSVRC2012_val_00028113,biological species on a leaf.,"['species', 'leaf']",OOD
+83,ILSVRC2012_val_00028352,biological species on a rock.,"['species', 'rock']",OOD
+84,ILSVRC2012_val_00029727,biological species in a pond.,"['species', 'pond']",OOD
+85,ILSVRC2012_val_00030342,biological species in a pond.,"['species', 'pond']",OOD
+86,ILSVRC2012_val_00032061,close - up of a frog's face.,"['close', 'frog', 'face']",OOD
+87,ILSVRC2012_val_00032916,frog on a green leaf.,"['frog', 'leaf']",OOD
+88,ILSVRC2012_val_00033863,biological species in the rainforest.,"['species', 'rainforest']",OOD
+89,ILSVRC2012_val_00033960,biological species in a pond.,"['species', 'pond']",OOD
+90,ILSVRC2012_val_00034226,close - up of a frog on a wall.,"['close', 'up', 'frog', 'wall']",OOD
+91,ILSVRC2012_val_00034383,biological species sitting on a rock.,"['species', 'rock']",OOD
+92,ILSVRC2012_val_00035535,biological species on a rock.,"['species', 'rock']",OOD
+93,ILSVRC2012_val_00036102,biological species in a pond.,"['species', 'pond']",OOD
+94,ILSVRC2012_val_00043312,close - up of a frog's face.,"['close', 'frog', 'face']",OOD
+95,ILSVRC2012_val_00043951,biological species in the water.,"['species', 'water']",OOD
+96,ILSVRC2012_val_00046427,biological species in a pond.,"['species', 'pond']",OOD
+97,ILSVRC2012_val_00047498,close - up of a green frog.,"['close', 'up', 'frog']",OOD
+98,ILSVRC2012_val_00049119,frog sitting on a leaf.,"['frog', 'leaf']",OOD
+99,ILSVRC2012_val_00049637,biological species in a tank.,"['species', 'tank']",OOD
+100,ILSVRC2012_val_00000531,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+101,ILSVRC2012_val_00001302,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+102,ILSVRC2012_val_00002302,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+103,ILSVRC2012_val_00002794,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+104,ILSVRC2012_val_00003139,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+105,ILSVRC2012_val_00004666,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+106,ILSVRC2012_val_00005587,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+107,ILSVRC2012_val_00006191,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+108,ILSVRC2012_val_00006824,person and her dogs sleeping on the bed.,"['person', 'dogs', 'bed']",OOD
+109,ILSVRC2012_val_00007071,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+110,ILSVRC2012_val_00010268,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+111,ILSVRC2012_val_00011198,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+112,ILSVRC2012_val_00011947,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+113,ILSVRC2012_val_00012839,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+114,ILSVRC2012_val_00014816,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+115,ILSVRC2012_val_00016488,person running in the snow.,"['person', 'snow']",OOD
+116,ILSVRC2012_val_00016745,a dog running on a path.,"['dog', 'path']",OOD
+117,ILSVRC2012_val_00017278,animal in the snow by person on 500px.,"['animal', 'snow', 'person', '500px']",OOD
+118,ILSVRC2012_val_00017421,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+119,ILSVRC2012_val_00018178,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+120,ILSVRC2012_val_00019080,dog running in the snow.,"['dog', 'snow']",OOD
+121,ILSVRC2012_val_00019535,dogs playing in the river.,"['dogs', 'river']",OOD
+122,ILSVRC2012_val_00019626,close - up of a black and white dog.,"['close', 'up', 'dog']",OOD
+123,ILSVRC2012_val_00020550,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+124,ILSVRC2012_val_00021196,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+125,ILSVRC2012_val_00021642,animal at the dog show.,"['animal', 'dog', 'show']",OOD
+126,ILSVRC2012_val_00022176,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+127,ILSVRC2012_val_00023539,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+128,ILSVRC2012_val_00023799,dogs that look like bears - photo #.,"['dogs', 'bears', 'photo', '#']",OOD
+129,ILSVRC2012_val_00025684,puppies for sale at a pet shop.,"['puppies', 'sale', 'pet', 'shop']",OOD
+130,ILSVRC2012_val_00026426,dogs sniffing each other on the beach.,"['dogs', 'beach']",OOD
+131,ILSVRC2012_val_00026650,person playing in the snow.,"['person', 'snow']",OOD
+132,ILSVRC2012_val_00031343,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+133,ILSVRC2012_val_00031623,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+134,ILSVRC2012_val_00032111,person and animal in the living room.,"['person', 'animal', 'living', 'room']",OOD
+135,ILSVRC2012_val_00033603,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+136,ILSVRC2012_val_00033915,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+137,ILSVRC2012_val_00034221,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+138,ILSVRC2012_val_00034266,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+139,ILSVRC2012_val_00034747,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+140,ILSVRC2012_val_00037538,person with his dog on the beach.,"['person', 'dog', 'beach']",OOD
+141,ILSVRC2012_val_00038029,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+142,ILSVRC2012_val_00040869,dogs playing in the snow.,"['dogs', 'snow']",OOD
+143,ILSVRC2012_val_00043234,a close - up of a dog's face.,"['close', 'dog', 'face']",OOD
+144,ILSVRC2012_val_00044618,"person, the puppy of the day.","['person', 'puppy', 'day']",OOD
+145,ILSVRC2012_val_00045495,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+146,ILSVRC2012_val_00045995,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+147,ILSVRC2012_val_00046013,"the dog nanny, dog sitter.","['dog', 'nanny', 'dog', 'sitter']",OOD
+148,ILSVRC2012_val_00046704,animal in the snow by person on 500px.,"['animal', 'snow', 'person', '500px']",OOD
+149,ILSVRC2012_val_00049498,"person, the dog of the day.","['person', 'dog', 'day']",OOD
+150,ILSVRC2012_val_00000211,the most interesting cat in the meme.,"['cat', 'meme']",OOD
+151,ILSVRC2012_val_00002475,portrait of a cat with blue eyes.,"['portrait', 'cat', 'eyes']",OOD
+152,ILSVRC2012_val_00002659,"funny animals of the week, funny animal photo, cute animal pictures.","['animals', 'week', 'animal', 'photo', 'animal', 'pictures']",OOD
+153,ILSVRC2012_val_00003133,a cat is seen in this undated file photo.,"['cat', 'file', 'photo']",OOD
+154,ILSVRC2012_val_00004088,"person, the cat of person.","['person', 'cat', 'person']",OOD
+155,ILSVRC2012_val_00004821,"person, the cat of person.","['person', 'cat', 'person']",OOD
+156,ILSVRC2012_val_00005466,"person, the cat of person.","['person', 'cat', 'person']",OOD
+157,ILSVRC2012_val_00010389,"person, the cat of person.","['person', 'cat', 'person']",OOD
+158,ILSVRC2012_val_00010436,close - up of a cat's face.,"['close', 'up', 'cat', 'face']",OOD
+159,ILSVRC2012_val_00011528,cats that look like other things - photo #.,"['cats', 'things', 'photo', '#']",OOD
+160,ILSVRC2012_val_00011738,this cat looks like it's trying to get out of a hole in the wall.,"['cat', 'hole', 'wall']",OOD
+161,ILSVRC2012_val_00012173,portrait of a black and white cat.,"['portrait', 'cat']",OOD
+162,ILSVRC2012_val_00015401,close - up of a cat's blue eyes.,"['close', 'up', 'cat', 'eyes']",OOD
+163,ILSVRC2012_val_00017186,"person, the cat of person.","['person', 'cat', 'person']",OOD
+164,ILSVRC2012_val_00017325,"person, the cat of person.","['person', 'cat', 'person']",OOD
+165,ILSVRC2012_val_00017692,"person, the cat of person.","['person', 'cat', 'person']",OOD
+166,ILSVRC2012_val_00020230,"person, the cat of person.","['person', 'cat', 'person']",OOD
+167,ILSVRC2012_val_00020594,"person, the cat of person.","['person', 'cat', 'person']",OOD
+168,ILSVRC2012_val_00020688,cat in a blanket - photo #.,"['cat', 'blanket', 'photo', '#']",OOD
+169,ILSVRC2012_val_00022535,"person, the cat of person.","['person', 'cat', 'person']",OOD
+170,ILSVRC2012_val_00024760,"person, the cat of person.","['person', 'cat', 'person']",OOD
+171,ILSVRC2012_val_00025519,portrait of a cat by person.,"['portrait', 'cat', 'person']",OOD
+172,ILSVRC2012_val_00025887,"person, the cat of person.","['person', 'cat', 'person']",OOD
+173,ILSVRC2012_val_00026893,"person, the cat of person.","['person', 'cat', 'person']",OOD
+174,ILSVRC2012_val_00028213,"person, the cat of person.","['person', 'cat', 'person']",OOD
+175,ILSVRC2012_val_00029839,"person, the cat of person.","['person', 'cat', 'person']",OOD
+176,ILSVRC2012_val_00030929,"person, the cat of person.","['person', 'cat', 'person']",OOD
+177,ILSVRC2012_val_00032328,the eyes are the windows to the soul.,"['eyes', 'windows', 'soul']",OOD
+178,ILSVRC2012_val_00034254,a close - up of a cat's blue eyes.,"['close', 'cat', 'eyes']",OOD
+179,ILSVRC2012_val_00034421,close - up of a cat's blue eyes.,"['close', 'up', 'cat', 'eyes']",OOD
+180,ILSVRC2012_val_00035566,"person, the cat of person.","['person', 'cat', 'person']",OOD
+181,ILSVRC2012_val_00036290,close - up of a cat's face.,"['close', 'up', 'cat', 'face']",OOD
+182,ILSVRC2012_val_00036526,"person, the cat of person.","['person', 'cat', 'person']",OOD
+183,ILSVRC2012_val_00036961,most expensive cat breeds in the world.,"['cat', 'breeds', 'world']",OOD
+184,ILSVRC2012_val_00038168,siamese cat sitting on a sofa.,"['cat', 'sofa']",OOD
+185,ILSVRC2012_val_00039580,"person, the cat of person.","['person', 'cat', 'person']",OOD
+186,ILSVRC2012_val_00039931,cat sitting on a desk.,"['cat', 'desk']",OOD
+187,ILSVRC2012_val_00039979,"person, the cat of person.","['person', 'cat', 'person']",OOD
+188,ILSVRC2012_val_00040854,"person, the cat of person.","['person', 'cat', 'person']",OOD
+189,ILSVRC2012_val_00043051,"person, the cat of person.","['person', 'cat', 'person']",OOD
+190,ILSVRC2012_val_00043090,"person, the cat of person.","['person', 'cat', 'person']",OOD
+191,ILSVRC2012_val_00043145,"person, the cat of person.","['person', 'cat', 'person']",OOD
+192,ILSVRC2012_val_00043546,cats in a basket by person.,"['cats', 'basket', 'person']",OOD
+193,ILSVRC2012_val_00043632,"person, the cat of person.","['person', 'cat', 'person']",OOD
+194,ILSVRC2012_val_00043891,"person, the cat of person.","['person', 'cat', 'person']",OOD
+195,ILSVRC2012_val_00045347,"person, the cat of person.","['person', 'cat', 'person']",OOD
+196,ILSVRC2012_val_00045829,"person, the cat of person.","['person', 'cat', 'person']",OOD
+197,ILSVRC2012_val_00046572,"person, the cat of person.","['person', 'cat', 'person']",OOD
+198,ILSVRC2012_val_00047103,"person, the cat of person.","['person', 'cat', 'person']",OOD
+199,ILSVRC2012_val_00048160,"person, the cat of person.","['person', 'cat', 'person']",OOD
+200,ILSVRC2012_val_00000179,"person, the horse of the day.","['person', 'horse', 'day']",OOD
+201,ILSVRC2012_val_00000892,a man and his horse in the paddock.,"['man', 'horse', 'paddock']",OOD
+202,ILSVRC2012_val_00004734,horse in the wild - photo #.,"['photo', '#']",OOD
+203,ILSVRC2012_val_00005097,a young girl riding a horse.,"['girl', 'horse']",OOD
+204,ILSVRC2012_val_00007267,a horse with a mare and foal.,"['horse', 'mare', 'foal']",OOD
+205,ILSVRC2012_val_00008317,a brown horse standing in a paddock.,"['horse', 'paddock']",OOD
+206,ILSVRC2012_val_00009113,a brown horse standing in a field.,"['horse', 'field']",OOD
+207,ILSVRC2012_val_00009168,horses grazing in the pasture.,"['horses', 'pasture']",OOD
+208,ILSVRC2012_val_00009344,a brown horse in the paddock.,"['horse', 'paddock']",OOD
+209,ILSVRC2012_val_00011600,horse in a paddock on a sunny day.,"['horse', 'paddock', 'day']",OOD
+210,ILSVRC2012_val_00014304,"person, the horse of the day.","['person', 'horse', 'day']",OOD
+211,ILSVRC2012_val_00014369,a young woman riding a horse.,"['woman', 'horse']",OOD
+212,ILSVRC2012_val_00014370,biological species in the snow.,"['species', 'snow']",OOD
+213,ILSVRC2012_val_00017358,a brown horse in a paddock.,"['horse', 'paddock']",OOD
+214,ILSVRC2012_val_00017532,person with her horse in the paddock.,"['person', 'horse', 'paddock']",OOD
+215,ILSVRC2012_val_00018417,horses and foals in the wild - photo #.,"['horses', 'foals', 'wild', 'photo', '#']",OOD
+216,ILSVRC2012_val_00018928,horses in the snow by person on 500px.,"['horses', 'snow', 'person', '500px']",OOD
+217,ILSVRC2012_val_00018932,horses graze in the meadow.,"['horses', 'meadow']",OOD
+218,ILSVRC2012_val_00019729,person with her horse in the paddock.,"['person', 'horse', 'paddock']",OOD
+219,ILSVRC2012_val_00019843,horses in the ring - photo #.,"['horses', 'ring', 'photo', '#']",OOD
+220,ILSVRC2012_val_00021242,a horse in the paddock.,"['horse', 'paddock']",OOD
+221,ILSVRC2012_val_00022302,horseback riding in the woods.,"['horseback', 'riding', 'woods']",OOD
+222,ILSVRC2012_val_00023066,person with a horse in the paddock.,"['person', 'horse', 'paddock']",OOD
+223,ILSVRC2012_val_00023360,close - up of a horse's eye.,"['close', 'up', 'horse', 'eye']",OOD
+224,ILSVRC2012_val_00023408,horse of the year - photo #.,"['horse', 'year', 'photo', '#']",OOD
+225,ILSVRC2012_val_00027043,a close - up of a horse's head.,"['close', 'horse', 'head']",OOD
+226,ILSVRC2012_val_00029082,horses in the paddock - photo #.,"['horses', 'paddock', 'photo', '#']",OOD
+227,ILSVRC2012_val_00029378,pedigreed animal with jockey after winning event.,"['animal', 'jockey', 'event']",OOD
+228,ILSVRC2012_val_00030081,a horse in a paddock.,"['horse', 'paddock']",OOD
+229,ILSVRC2012_val_00032126,close - up of a horse's head.,"['close', 'up', 'horse', 'head']",OOD
+230,ILSVRC2012_val_00033221,portrait of a horse in the paddock.,"['portrait', 'horse', 'paddock']",OOD
+231,ILSVRC2012_val_00033323,horse jumping over a hurdle.,"['horse', 'hurdle']",OOD
+232,ILSVRC2012_val_00034046,person riding a horse in his backyard.,"['person', 'horse', 'backyard']",OOD
+233,ILSVRC2012_val_00034108,horses in the field - photo #.,"['horses', 'field', 'photo', '#']",OOD
+234,ILSVRC2012_val_00035846,horse running in a paddock.,"['horse', 'paddock']",OOD
+235,ILSVRC2012_val_00039259,person riding a horse at show.,"['person', 'horse', 'show']",OOD
+236,ILSVRC2012_val_00039474,horse in the snow by person on 500px.,"['horse', 'snow', 'person', '500px']",OOD
+237,ILSVRC2012_val_00041332,a horse with a bridle.,"['horse', 'bridle']",OOD
+238,ILSVRC2012_val_00042235,a young girl riding a horse.,"['girl', 'horse']",OOD
+239,ILSVRC2012_val_00043299,close - up of a brown horse's face.,"['close', 'up', 'horse', 'face']",OOD
+240,ILSVRC2012_val_00044391,a horse with a moustache.,"['horse', 'moustache']",OOD
+241,ILSVRC2012_val_00044832,"person, the horse of the day.","['person', 'horse', 'day']",OOD
+242,ILSVRC2012_val_00045251,close - up of a horse's head.,"['close', 'up', 'horse', 'head']",OOD
+243,ILSVRC2012_val_00045356,a brown horse standing in a paddock.,"['horse', 'paddock']",OOD
+244,ILSVRC2012_val_00045409,a pony's hair in the wind.,"['pony', 'hair', 'wind']",OOD
+245,ILSVRC2012_val_00046638,a close up of a horse's head.,"['close', 'horse', 'head']",OOD
+246,ILSVRC2012_val_00047494,horseback riding on a sunny day.,"['horseback', 'riding', 'day']",OOD
+247,ILSVRC2012_val_00048225,horses in a corral at the rodeo.,"['horses', 'corral', 'rodeo']",OOD
+248,ILSVRC2012_val_00049082,a brown horse in a pasture.,"['horse', 'pasture']",OOD
+249,ILSVRC2012_val_00049605,horse and jockey in the paddock.,"['horse', 'jockey', 'paddock']",OOD
+250,ILSVRC2012_val_00000127,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+251,ILSVRC2012_val_00001640,giraffes in the wild - photo #.,"['giraffes', 'wild', 'photo', '#']",OOD
+252,ILSVRC2012_val_00002064,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+253,ILSVRC2012_val_00002815,biological species in the bush.,"['species', 'bush']",OOD
+254,ILSVRC2012_val_00003871,a deer stands in the shade of a tree.,"['deer', 'shade', 'tree']",OOD
+255,ILSVRC2012_val_00006306,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+256,ILSVRC2012_val_00006973,biological species in the wild.,"['species', 'wild']",OOD
+257,ILSVRC2012_val_00007395,biological species is one of the largest antelope in the world.,"['species', 'antelope', 'world']",OOD
+258,ILSVRC2012_val_00007586,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+259,ILSVRC2012_val_00009287,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+260,ILSVRC2012_val_00009954,biological species in the bush.,"['species', 'bush']",OOD
+261,ILSVRC2012_val_00010132,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+262,ILSVRC2012_val_00011737,biological species in the grass.,"['species', 'grass']",OOD
+263,ILSVRC2012_val_00011756,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+264,ILSVRC2012_val_00012297,biological species in the bush.,"['species', 'bush']",OOD
+265,ILSVRC2012_val_00015081,biological species in the bush.,"['species', 'bush']",OOD
+266,ILSVRC2012_val_00016293,biological species in the bush.,"['species', 'bush']",OOD
+267,ILSVRC2012_val_00018210,biological species in the morning light.,"['species', 'morning', 'light']",OOD
+268,ILSVRC2012_val_00018236,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+269,ILSVRC2012_val_00018674,biological species on the move.,"['species', 'move']",OOD
+270,ILSVRC2012_val_00020404,herd of biological species in the wild.,"['herd', 'species', 'wild']",OOD
+271,ILSVRC2012_val_00021701,biological species in the grasslands.,"['species', 'grasslands']",OOD
+272,ILSVRC2012_val_00024665,giraffes in the wild - photo #.,"['giraffes', 'wild', 'photo', '#']",OOD
+273,ILSVRC2012_val_00025116,biological species in the bush.,"['species', 'bush']",OOD
+274,ILSVRC2012_val_00025352,biological species in the grass.,"['species', 'grass']",OOD
+275,ILSVRC2012_val_00025384,biological species in the zoo.,"['species', 'zoo']",OOD
+276,ILSVRC2012_val_00026299,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+277,ILSVRC2012_val_00027012,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+278,ILSVRC2012_val_00027136,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+279,ILSVRC2012_val_00027625,biological species in the wild.,"['species', 'wild']",OOD
+280,ILSVRC2012_val_00028451,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+281,ILSVRC2012_val_00028482,giraffes in the wild - photo #.,"['giraffes', 'wild', 'photo', '#']",OOD
+282,ILSVRC2012_val_00030033,biological species in the bush.,"['species', 'bush']",OOD
+283,ILSVRC2012_val_00031421,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+284,ILSVRC2012_val_00031910,a close - up of the head and neck of a deer.,"['close', 'up', 'head', 'neck', 'deer']",OOD
+285,ILSVRC2012_val_00032385,biological species in the grasslands.,"['species', 'grasslands']",OOD
+286,ILSVRC2012_val_00034071,biological species in the wild.,"['species', 'wild']",OOD
+287,ILSVRC2012_val_00035239,a herd of giraffes in the savannah.,"['herd', 'giraffes', 'savannah']",OOD
+288,ILSVRC2012_val_00036108,deer drinking at a waterhole.,"['deer', 'waterhole']",OOD
+289,ILSVRC2012_val_00036178,giraffes drinking at a waterhole.,"['giraffes', 'waterhole']",OOD
+290,ILSVRC2012_val_00037295,biological species in the grasslands.,"['species', 'grasslands']",OOD
+291,ILSVRC2012_val_00037656,herd of giraffes in the savannah.,[],OOD
+292,ILSVRC2012_val_00041130,deer in the wild - photo #.,"['deer', 'wild', 'photo', '#']",OOD
+293,ILSVRC2012_val_00042401,biological species in the grass.,"['species', 'grass']",OOD
+294,ILSVRC2012_val_00042971,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+295,ILSVRC2012_val_00043784,a herd of biological species.,"['herd', 'species']",OOD
+296,ILSVRC2012_val_00047823,biological species in the wild - photo #.,"['species', 'wild', 'photo', '#']",OOD
+297,ILSVRC2012_val_00047967,biological subspecies in the water.,"['subspecies', 'water']",OOD
+298,ILSVRC2012_val_00048459,biological species in the bush.,"['species', 'bush']",OOD
+299,ILSVRC2012_val_00049120,biological species in the grasslands.,"['species', 'grasslands']",OOD
+300,ILSVRC2012_val_00000403,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+301,ILSVRC2012_val_00001339,a container ship is seen docked.,"['container', 'ship']",OOD
+302,ILSVRC2012_val_00002748,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+303,ILSVRC2012_val_00003055,a file photo of a container ship.,"['file', 'photo', 'container', 'ship']",OOD
+304,ILSVRC2012_val_00003200,tourists walk along the beach.,"['tourists', 'beach']",OOD
+305,ILSVRC2012_val_00005496,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+306,ILSVRC2012_val_00005740,a container ship is seen in this undated file photo.,"['container', 'ship', 'file', 'photo']",OOD
+307,ILSVRC2012_val_00005912,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+308,ILSVRC2012_val_00006254,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+309,ILSVRC2012_val_00007161,a container ship is seen docked.,"['container', 'ship']",OOD
+310,ILSVRC2012_val_00009069,a container ship passes under suspension bridge.,"['container', 'ship', 'suspension', 'bridge']",OOD
+311,ILSVRC2012_val_00010195,cruise ship in the bay.,"['cruise', 'ship', 'bay']",OOD
+312,ILSVRC2012_val_00010325,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+313,ILSVRC2012_val_00010704,a container ship is seen in this undated file photo.,"['container', 'ship', 'file', 'photo']",OOD
+314,ILSVRC2012_val_00012534,a file photo of the plant.,"['file', 'photo', 'plant']",OOD
+315,ILSVRC2012_val_00013664,a container ship is seen in this undated file photo.,"['container', 'ship', 'file', 'photo']",OOD
+316,ILSVRC2012_val_00014019,a container ship is seen docked.,"['container', 'ship']",OOD
+317,ILSVRC2012_val_00014953,a container ship is maneuvered into position at the terminal of the port.,"['container', 'ship', 'position', 'terminal', 'port']",OOD
+318,ILSVRC2012_val_00016094,a view from the deck of the ship.,"['view', 'deck', 'ship']",OOD
+319,ILSVRC2012_val_00017812,a photo of a container ship.,"['photo', 'container', 'ship']",OOD
+320,ILSVRC2012_val_00018818,a container ship is seen in this undated file photo.,"['container', 'ship', 'file', 'photo']",OOD
+321,ILSVRC2012_val_00019229,a container ship is seen docked.,"['container', 'ship']",OOD
+322,ILSVRC2012_val_00020075,a container ship is seen docked.,"['container', 'ship']",OOD
+323,ILSVRC2012_val_00020939,a container ship in the sea.,"['container', 'ship', 'sea']",OOD
+324,ILSVRC2012_val_00021583,cranes at the port of a city.,"['cranes', 'port', 'city']",OOD
+325,ILSVRC2012_val_00022271,a container ship in the port.,"['container', 'ship', 'port']",OOD
+326,ILSVRC2012_val_00023414,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+327,ILSVRC2012_val_00023417,a file photo of a container ship.,"['file', 'photo', 'container', 'ship']",OOD
+328,ILSVRC2012_val_00024089,cargo ship in the sea.,"['cargo', 'ship', 'sea']",OOD
+329,ILSVRC2012_val_00025201,a container ship is seen in this undated image.,"['container', 'ship', 'image']",OOD
+330,ILSVRC2012_val_00026041,a container ship is seen docked at the port.,"['container', 'ship', 'port']",OOD
+331,ILSVRC2012_val_00026423,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+332,ILSVRC2012_val_00027211,container ship in the port.,"['container', 'ship', 'port']",OOD
+333,ILSVRC2012_val_00029800,a container ship is seen docked.,"['container', 'ship']",OOD
+334,ILSVRC2012_val_00032178,a container ship heads out to sea.,"['container', 'ship', 'sea']",OOD
+335,ILSVRC2012_val_00033533,a logo is seen on the side of a container ship.,"['logo', 'side', 'container', 'ship']",OOD
+336,ILSVRC2012_val_00034508,a container ship is seen docked.,"['container', 'ship']",OOD
+337,ILSVRC2012_val_00034601,a file photo of a container ship.,"['file', 'photo', 'container', 'ship']",OOD
+338,ILSVRC2012_val_00034816,cargo ship in the sea.,"['cargo', 'ship', 'sea']",OOD
+339,ILSVRC2012_val_00035961,the speed of the world's trade is dependent on the number of ships it has to transport.,"['speed', 'world', 'trade', 'number', 'ships']",OOD
+340,ILSVRC2012_val_00036884,a container ship is seen docked.,"['container', 'ship']",OOD
+341,ILSVRC2012_val_00038850,a container ship is seen in this undated file photo.,"['container', 'ship', 'file', 'photo']",OOD
+342,ILSVRC2012_val_00039486,a container ship is seen docked.,"['container', 'ship']",OOD
+343,ILSVRC2012_val_00039908,a container ship is maneuvered into position at the terminal of the port.,"['container', 'ship', 'position', 'terminal', 'port']",OOD
+344,ILSVRC2012_val_00043479,a container ship is loaded onto a truck at the port.,"['container', 'ship', 'truck', 'port']",OOD
+345,ILSVRC2012_val_00044334,cargo ship in the port.,"['cargo', 'ship', 'port']",OOD
+346,ILSVRC2012_val_00046110,a container ship is seen docked.,"['container', 'ship']",OOD
+347,ILSVRC2012_val_00047443,a container ship is seen in this aerial photo.,"['container', 'ship', 'photo']",OOD
+348,ILSVRC2012_val_00049257,tourist attraction in the background.,"['attraction', 'background']",OOD
+349,ILSVRC2012_val_00049475,tourist attraction in the 1950s.,"['tourist', 'attraction']",OOD
+350,ILSVRC2012_val_00001144,one of the many trucks we saw along the way.,"['trucks', 'way']",OOD
+351,ILSVRC2012_val_00002210,truck on the street at night.,"['truck', 'street', 'night']",OOD
+352,ILSVRC2012_val_00002434,a dump truck is seen in this undated image.,"['dump', 'truck', 'image']",OOD
+353,ILSVRC2012_val_00004119,a snow plow on the streets.,"['snow', 'plow', 'streets']",OOD
+354,ILSVRC2012_val_00005094,delivery truck on the move.,"['delivery', 'truck', 'move']",OOD
+355,ILSVRC2012_val_00005744,a truck traveling along a road.,"['truck', 'road']",OOD
+356,ILSVRC2012_val_00006234,a dump truck is seen in this undated image.,"['dump', 'truck', 'image']",OOD
+357,ILSVRC2012_val_00006922,a truck hauling a garbage truck.,"['truck', 'garbage', 'truck']",OOD
+358,ILSVRC2012_val_00007477,one of the new trucks.,['trucks'],OOD
+359,ILSVRC2012_val_00007519,one of the trucks on the road.,"['trucks', 'road']",OOD
+360,ILSVRC2012_val_00008430,the truck that took me to the hospital.,"['truck', 'hospital']",OOD
+361,ILSVRC2012_val_00009345,rear view of the van.,"['view', 'van']",OOD
+362,ILSVRC2012_val_00012925,a dump truck is seen in this undated file photo.,"['dump', 'truck', 'file', 'photo']",OOD
+363,ILSVRC2012_val_00013827,a dump truck is seen in this undated file photo.,"['dump', 'truck', 'file', 'photo']",OOD
+364,ILSVRC2012_val_00013925,a truck and other traffic traveling along a street.,"['truck', 'traffic', 'street']",OOD
+365,ILSVRC2012_val_00013958,this was the first time i've seen this type of machinery in my neighborhood.,"['time', 'type', 'machinery', 'neighborhood']",OOD
+366,ILSVRC2012_val_00016208,trucks wait to be loaded onto a truck.,"['trucks', 'truck']",OOD
+367,ILSVRC2012_val_00018227,a truck traveling along the dual carriageway.,"['truck', 'carriageway']",OOD
+368,ILSVRC2012_val_00019147,this is a photo of a truck.,"['photo', 'truck']",OOD
+369,ILSVRC2012_val_00021253,transport vehicle type on the road.,"['transport', 'vehicle', 'type', 'road']",OOD
+370,ILSVRC2012_val_00022172,one of the trucks on the road.,"['trucks', 'road']",OOD
+371,ILSVRC2012_val_00024560,this is a photo of our new truck.,"['photo', 'truck']",OOD
+372,ILSVRC2012_val_00025379,a truck traveling around a roundabout.,"['truck', 'roundabout']",OOD
+373,ILSVRC2012_val_00025416,this is what the truck looked like when it arrived.,['truck'],OOD
+374,ILSVRC2012_val_00026865,this is what happens when you have to park your bike in the middle of a busy street.,"['bike', 'middle', 'street']",OOD
+375,ILSVRC2012_val_00027110,a garbage truck is seen in this undated file photo.,"['garbage', 'truck', 'file', 'photo']",OOD
+376,ILSVRC2012_val_00027150,a truck traveling around a roundabout.,"['truck', 'roundabout']",OOD
+377,ILSVRC2012_val_00028190,some of the trucks that will be on display at festival.,"['trucks', 'display', 'festival']",OOD
+378,ILSVRC2012_val_00028914,this is a photo of our new garbage truck.,"['photo', 'garbage', 'truck']",OOD
+379,ILSVRC2012_val_00029377,one of the many trucks we saw on the trip.,"['trucks', 'trip']",OOD
+380,ILSVRC2012_val_00031313,a truck traveling along the dual carriageway.,"['truck', 'carriageway']",OOD
+381,ILSVRC2012_val_00032800,truck on a snow covered road.,"['truck', 'snow', 'road']",OOD
+382,ILSVRC2012_val_00033842,a dump truck is seen in this undated file photo.,"['dump', 'truck', 'file', 'photo']",OOD
+383,ILSVRC2012_val_00034001,a truck on the highway.,"['truck', 'highway']",OOD
+384,ILSVRC2012_val_00034078,a photo of our new trucks thanks to person.,"['photo', 'trucks', 'thanks', 'person']",OOD
+385,ILSVRC2012_val_00034417,a dump truck is seen in this undated file photo.,"['dump', 'truck', 'file', 'photo']",OOD
+386,ILSVRC2012_val_00036233,a truck hauling a load of garbage.,"['truck', 'load', 'garbage']",OOD
+387,ILSVRC2012_val_00036554,a delivery truck is seen in this undated file photo.,"['delivery', 'truck', 'file', 'photo']",OOD
+388,ILSVRC2012_val_00037947,automobile model on display at show.,"['automobile', 'model', 'display', 'show']",OOD
+389,ILSVRC2012_val_00038268,a truck hauling a pallet of ice.,"['truck', 'pallet', 'ice']",OOD
+390,ILSVRC2012_val_00039069,trucks loaded with sand at a construction site.,"['trucks', 'sand', 'construction', 'site']",OOD
+391,ILSVRC2012_val_00041478,a truck traveling around a roundabout.,"['truck', 'roundabout']",OOD
+392,ILSVRC2012_val_00042487,a man and a woman were injured after falling feet from a dumpster on a road.,"['man', 'woman', 'feet', 'dumpster', 'road']",OOD
+393,ILSVRC2012_val_00042802,a truck on the side of the road.,"['truck', 'side', 'road']",OOD
+394,ILSVRC2012_val_00043909,a truck hauling a garbage truck.,"['truck', 'garbage', 'truck']",OOD
+395,ILSVRC2012_val_00044888,image result for dump truck on the road.,"['image', 'result', 'dump', 'truck', 'road']",OOD
+396,ILSVRC2012_val_00044976,a truck is seen in this undated image.,"['truck', 'image']",OOD
+397,ILSVRC2012_val_00046913,a pile of trash is seen in this undated file photo.,"['pile', 'trash', 'file', 'photo']",OOD
+398,ILSVRC2012_val_00047189,trucks parked in front of a house.,"['trucks', 'front', 'house']",OOD
+399,ILSVRC2012_val_00047374,a truck hauling a garbage truck.,"['truck', 'garbage', 'truck']",OOD
+400,ILSVRC2012_val_00001247,automobile model in the old town.,"['automobile', 'model', 'town']",OOD
+401,ILSVRC2012_val_00003049,person drives automobile model during the race.,"['person', 'automobile', 'model', 'race']",OOD
+402,ILSVRC2012_val_00003478,automobile model at the car show.,"['model', 'car', 'show']",OOD
+403,ILSVRC2012_val_00003896,automobile model is one of the fastest cars in the world.,"['model', 'cars', 'world']",OOD
+404,ILSVRC2012_val_00004076,automobile model in the grass.,"['automobile', 'model', 'grass']",OOD
+405,ILSVRC2012_val_00004868,automobile model on the road.,"['automobile', 'model', 'road']",OOD
+406,ILSVRC2012_val_00004970,automobile model is one of my all - time favorite cars.,"['automobile', 'model', 'time', 'cars']",OOD
+407,ILSVRC2012_val_00004979,automobile model parked in the street.,"['model', 'street']",OOD
+408,ILSVRC2012_val_00005456,automobile model on the road.,"['automobile', 'model', 'road']",OOD
+409,ILSVRC2012_val_00006285,automobile model on display at show.,"['automobile', 'model', 'display', 'show']",OOD
+410,ILSVRC2012_val_00007125,automotive industry business is one of the most popular sports cars in the world.,"['automotive', 'industry', 'business', 'sports', 'cars', 'world']",OOD
+411,ILSVRC2012_val_00007592,classic exotic expensive car show in the summer.,"['car', 'show', 'summer']",OOD
+412,ILSVRC2012_val_00008392,top most expensive cars in the world.,"['cars', 'world']",OOD
+413,ILSVRC2012_val_00009607,automobile model on the track.,"['automobile', 'model', 'track']",OOD
+414,ILSVRC2012_val_00010206,automobile model at the show.,"['automobile', 'model', 'show']",OOD
+415,ILSVRC2012_val_00010455,automobile model with a turbocharged engine.,"['model', 'engine']",OOD
+416,ILSVRC2012_val_00010983,automobile model in the car rally.,"['model', 'car', 'rally']",OOD
+417,ILSVRC2012_val_00012327,automobile model in the sunset.,"['automobile', 'model', 'sunset']",OOD
+418,ILSVRC2012_val_00013258,automobile model in the showroom.,"['automobile', 'model', 'showroom']",OOD
+419,ILSVRC2012_val_00013805,cars lined up at the start of the race.,"['cars', 'start', 'race']",OOD
+420,ILSVRC2012_val_00016638,top concept cars at show.,"['concept', 'cars', 'show']",OOD
+421,ILSVRC2012_val_00018117,automobile model at a classic car show.,"['model', 'car', 'show']",OOD
+422,ILSVRC2012_val_00022246,automobile model at a classic car show.,"['model', 'car', 'show']",OOD
+423,ILSVRC2012_val_00022270,automobile model in action during the race.,"['automobile', 'model', 'action', 'race']",OOD
+424,ILSVRC2012_val_00022739,automobile model on the race track.,"['model', 'race', 'track']",OOD
+425,ILSVRC2012_val_00025004,automobile model is one of the most iconic cars of all time.,"['model', 'cars', 'time']",OOD
+426,ILSVRC2012_val_00025260,automobile model in action during the race.,"['automobile', 'model', 'action', 'race']",OOD
+427,ILSVRC2012_val_00025465,automobile model on the road.,"['automobile', 'model', 'road']",OOD
+428,ILSVRC2012_val_00025587,automobile model in the mountains.,"['automobile', 'model', 'mountains']",OOD
+429,ILSVRC2012_val_00027397,automobile model at a classic car show.,"['model', 'car', 'show']",OOD
+430,ILSVRC2012_val_00028336,automobile model in the pit lane.,"['model', 'pit', 'lane']",OOD
+431,ILSVRC2012_val_00029021,automobile model was one of the fastest cars in the world.,"['model', 'cars', 'world']",OOD
+432,ILSVRC2012_val_00030351,automobile model at a classic car show.,"['model', 'car', 'show']",OOD
+433,ILSVRC2012_val_00032944,automobile model is one of the most expensive cars in the world.,"['automobile', 'model', 'cars', 'world']",OOD
+434,ILSVRC2012_val_00033293,automobile model is one of the most iconic cars of all time.,"['model', 'cars', 'time']",OOD
+435,ILSVRC2012_val_00035309,person with his new car.,"['person', 'car']",OOD
+436,ILSVRC2012_val_00035603,automobile model on display at show.,"['automobile', 'model', 'display', 'show']",OOD
+437,ILSVRC2012_val_00036695,automobile model in the car park.,"['model', 'car', 'park']",OOD
+438,ILSVRC2012_val_00037952,automobile model on display at show.,"['automobile', 'model', 'display', 'show']",OOD
+439,ILSVRC2012_val_00038060,automobile model at the car show.,"['model', 'car', 'show']",OOD
+440,ILSVRC2012_val_00038344,automobile model on the track.,"['automobile', 'model', 'track']",OOD
+441,ILSVRC2012_val_00038894,automobile model from the 80s.,"['automobile', 'model', '80s']",OOD
+442,ILSVRC2012_val_00040009,automobile model is one of the most beautiful cars i've ever seen.,"['model', 'cars']",OOD
+443,ILSVRC2012_val_00041064,automobile model on display at show.,"['automobile', 'model', 'display', 'show']",OOD
+444,ILSVRC2012_val_00041626,some of the cars on display.,"['cars', 'display']",OOD
+445,ILSVRC2012_val_00043297,man drives automobile model during practice for the race.,"['man', 'automobile', 'model', 'practice', 'race']",OOD
+446,ILSVRC2012_val_00045210,automobile model painted on the back of a car.,"['automobile', 'model', 'back', 'car']",OOD
+447,ILSVRC2012_val_00047893,automobile model was one of the fastest cars in the world.,"['model', 'cars', 'world']",OOD
+448,ILSVRC2012_val_00049427,automobile model at the show.,"['automobile', 'model', 'show']",OOD
+449,ILSVRC2012_val_00049675,top most expensive cars in the world.,"['cars', 'world']",OOD
+450,ILSVRC2012_val_00000369,helicopters fly past the statue of liberty.,['helicopters'],OOD
+451,ILSVRC2012_val_00003293,"aircraft model, the world's largest supersonic passenger aircraft, arrives.","['aircraft', 'model', 'world', 'passenger', 'aircraft']",OOD
+452,ILSVRC2012_val_00004879,aircraft model in flight over english civil parish.,"['aircraft', 'model', 'flight']",OOD
+453,ILSVRC2012_val_00004998,aircraft model in the air.,"['aircraft', 'model', 'air']",OOD
+454,ILSVRC2012_val_00005116,aircraft model on the flight deck of the aircraft carrier.,"['aircraft', 'model', 'flight', 'deck', 'aircraft', 'carrier']",OOD
+455,ILSVRC2012_val_00007004,aircraft model in flight at show.,"['aircraft', 'model', 'flight', 'show']",OOD
+456,ILSVRC2012_val_00007311,aircraft model is a twin - turboprop aircraft built by defunct organisation.,"['aircraft', 'model', 'turboprop', 'aircraft', 'organisation']",OOD
+457,ILSVRC2012_val_00010014,aircraft model takes off from the flight deck of the aircraft carrier.,"['aircraft', 'model', 'flight', 'deck', 'aircraft', 'carrier']",OOD
+458,ILSVRC2012_val_00011942,"aircraft model, the world's first jet fighter, was built and is the world's first jet fighter.","['aircraft', 'model', 'world', 'jet', 'fighter', 'world', 'jet', 'fighter']",OOD
+459,ILSVRC2012_val_00012932,aircraft model in action during the airshow.,"['aircraft', 'model', 'action', 'airshow']",OOD
+460,ILSVRC2012_val_00015070,aircraft model is a twin - engine aircraft designed and built by defunct organisation.,"['aircraft', 'model', 'engine', 'aircraft', 'organisation']",OOD
+461,ILSVRC2012_val_00015306,aircraft model was a fighter aircraft designed and built by defunct organisation.,"['aircraft', 'model', 'fighter', 'aircraft', 'organisation']",OOD
+462,ILSVRC2012_val_00016506,aircraft model was one of the first aircraft to enter service.,"['aircraft', 'model', 'aircraft', 'service']",OOD
+463,ILSVRC2012_val_00018147,aircraft model is one of the most iconic aircrafts of all time.,"['aircraft', 'model', 'aircrafts', 'time']",OOD
+464,ILSVRC2012_val_00018190,aircraft model on display at the airshow.,"['aircraft', 'model', 'display', 'airshow']",OOD
+465,ILSVRC2012_val_00018638,the cockpit of the aircraft.,"['cockpit', 'aircraft']",OOD
+466,ILSVRC2012_val_00019254,"aircraft model, the world's first fully - armed jet fighter, is displayed.","['aircraft', 'model', 'world', 'jet', 'fighter']",OOD
+467,ILSVRC2012_val_00020759,organisation performing at the airshow.,"['organisation', 'airshow']",OOD
+468,ILSVRC2012_val_00021062,aircraft model in flight over a city.,"['aircraft', 'model', 'flight', 'city']",OOD
+469,ILSVRC2012_val_00021358,aircraft model sits on the flight line.,"['aircraft', 'model', 'flight', 'line']",OOD
+470,ILSVRC2012_val_00022103,aircraft model takes off from the runway.,"['aircraft', 'model', 'runway']",OOD
+471,ILSVRC2012_val_00023087,aircraft model is a twin - engine aircraft designed and built by aircraft manufacturer for armed force.,"['aircraft', 'model', 'engine', 'aircraft', 'aircraft', 'manufacturer', 'force']",OOD
+472,ILSVRC2012_val_00023334,"aircraft model is a twin - engine, twin - turboprop aircraft designed and built by aircraft manufacturer.","['aircraft', 'model', 'engine', 'turboprop', 'aircraft', 'aircraft', 'manufacturer']",OOD
+473,ILSVRC2012_val_00023593,aircraft model is a twin - engine aircraft designed and built by aircraft manufacturer for armed force.,"['aircraft', 'model', 'engine', 'aircraft', 'aircraft', 'manufacturer', 'force']",OOD
+474,ILSVRC2012_val_00023701,aircraft model flying in the sky.,"['aircraft', 'model', 'sky']",OOD
+475,ILSVRC2012_val_00024613,helicopters landing on the flight deck of the aircraft carrier.,"['helicopters', 'flight', 'deck', 'aircraft', 'carrier']",OOD
+476,ILSVRC2012_val_00024705,one of the many aircrafts displayed at the museum.,"['aircrafts', 'museum']",OOD
+477,ILSVRC2012_val_00026553,aircraft model on display at the museum.,"['aircraft', 'model', 'display', 'museum']",OOD
+478,ILSVRC2012_val_00027681,"aircraft model is a twin - engine, twin - turboprop aircraft designed and built by defunct organisation.","['aircraft', 'model', 'engine', 'turboprop', 'aircraft', 'organisation']",OOD
+479,ILSVRC2012_val_00028193,aircraft model and jet fighter in flight.,"['aircraft', 'model', 'jet', 'fighter', 'flight']",OOD
+480,ILSVRC2012_val_00028234,aircraft model in the clouds.,"['aircraft', 'model', 'clouds']",OOD
+481,ILSVRC2012_val_00030069,aircraft model in flight over a city.,"['aircraft', 'model', 'flight', 'city']",OOD
+482,ILSVRC2012_val_00030208,an aircraft takes off from the flight deck of the amphibious assault ship.,"['aircraft', 'flight', 'deck', 'assault', 'ship']",OOD
+483,ILSVRC2012_val_00031559,aircraft model was one of the first aircraft to enter service.,"['aircraft', 'model', 'aircraft', 'service']",OOD
+484,ILSVRC2012_val_00032516,aircraft model in flight at show.,"['aircraft', 'model', 'flight', 'show']",OOD
+485,ILSVRC2012_val_00033671,aircraft model is a twin - turboprop aircraft manufactured by aircraft manufacturer.,"['aircraft', 'model', 'turboprop', 'aircraft', 'aircraft', 'manufacturer']",OOD
+486,ILSVRC2012_val_00034713,a fighter aircraft sits on the flight deck of the aircraft carrier.,"['fighter', 'aircraft', 'flight', 'deck', 'aircraft', 'carrier']",OOD
+487,ILSVRC2012_val_00035119,aircraft model is a twin - engine aircraft designed and built by aircraft manufacturer.,"['aircraft', 'model', 'engine', 'aircraft', 'aircraft', 'manufacturer']",OOD
+488,ILSVRC2012_val_00037204,aircraft model in flight over us state.,"['aircraft', 'model', 'flight']",OOD
+489,ILSVRC2012_val_00037822,aircraft model takes off from the flight deck of the aircraft carrier.,"['aircraft', 'model', 'flight', 'deck', 'aircraft', 'carrier']",OOD
+490,ILSVRC2012_val_00038939,the cockpit of aircraft model.,"['cockpit', 'aircraft', 'model']",OOD
+491,ILSVRC2012_val_00039785,a jet takes off from the flight deck of the amphibious assault ship.,"['jet', 'flight', 'deck', 'assault', 'ship']",OOD
+492,ILSVRC2012_val_00044335,aircraft model on the runway.,"['aircraft', 'model', 'runway']",OOD
+493,ILSVRC2012_val_00046026,aircraft model and jet fighter in flight.,"['aircraft', 'model', 'jet', 'fighter', 'flight']",OOD
+494,ILSVRC2012_val_00046500,aircraft model on display at show.,"['aircraft', 'model', 'display', 'show']",OOD
+495,ILSVRC2012_val_00047529,"aircraft model was a twin - engine, twin - turboprop aircraft designed and built by defunct organisation.","['aircraft', 'model', 'engine', 'turboprop', 'aircraft', 'organisation']",OOD
+496,ILSVRC2012_val_00047539,aircraft model is a twin - turboprop aircraft built by aerospace business for armed force.,"['aircraft', 'model', 'turboprop', 'aircraft', 'aerospace', 'business', 'force']",OOD
+497,ILSVRC2012_val_00047723,aircraft model in flight over us state.,"['aircraft', 'model', 'flight']",OOD
+498,ILSVRC2012_val_00047865,a helicopter sits on the flight deck of the amphibious assault ship.,"['helicopter', 'flight', 'deck', 'assault', 'ship']",OOD
+499,ILSVRC2012_val_00047921,aircraft model takes off from the flight deck of the amphibious assault ship.,"['aircraft', 'model', 'flight', 'deck', 'assault', 'ship']",OOD

@@ -1,5 +1,6 @@
 
-import sys, os
+import sys
+import os
 import time
 import numpy as np
 import torch
@@ -11,187 +12,199 @@ from torchvision import datasets, transforms
 import torchvision.transforms as transforms
 from continuum.datasets import ImageNet100
 from data.imagenet_subset import ImageNetDogs, ImageNetSubset
-from dataset import Cub2011,StanfordCars,Flowers102,Food101,OxfordIIITPet
+from dataloaders import Cub2011, StanfordCars, Flowers102, Food101, OxfordIIITPet
 from utils.common import AverageMeter, accuracy, warmup_learning_rate
 
-def set_train_loader(args, preprocess = None, batch_size = None, shuffle = False, subset = False):
+
+def set_train_loader(args, preprocess=None, batch_size=None, shuffle=False, subset=False):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
     root = args.root_dir
     if preprocess == None:
-        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
-                                        std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
+        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073),
+                                         std=(0.26862954, 0.26130258, 0.27577711))  # for CLIP
         preprocess = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize
-            ])
+        ])
     kwargs = {'num_workers': 4, 'pin_memory': True}
-    if batch_size is None:  #normal case: used for trainign
+    if batch_size is None:  # normal case: used for trainign
         batch_size = args.batch_size
         shuffle = True
     if args.in_dataset == "CIFAR-10":
         train_loader = torch.utils.data.DataLoader(
-                    datasets.CIFAR10( os.path.join(root, 'cifar10'), train=True, download=True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+            datasets.CIFAR10(os.path.join(root, 'cifar10'),
+                             train=True, download=True, transform=preprocess),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "CIFAR-100":
         train_loader = torch.utils.data.DataLoader(
-                    datasets.CIFAR100(os.path.join(root, 'cifar100'), train=True, download=True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+            datasets.CIFAR100(os.path.join(root, 'cifar100'),
+                              train=True, download=True, transform=preprocess),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet','train')
+            path = os.path.join('/nobackup', 'ImageNet', 'train')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012', 'train')
         dataset = datasets.ImageFolder(path, transform=preprocess)
-        if subset: 
+        if subset:
             from collections import defaultdict
             classwise_count = defaultdict(int)
             indices = []
-            for i, label in enumerate(dataset.targets): 
+            for i, label in enumerate(dataset.targets):
                 if classwise_count[label] < args.max_count:
                     indices.append(i)
                     classwise_count[label] += 1
-            dataset = torch.utils.data.Subset(dataset, indices)            
+            dataset = torch.utils.data.Subset(dataset, indices)
         train_loader = torch.utils.data.DataLoader(dataset,
-                batch_size=batch_size, shuffle=shuffle, **kwargs)
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset in ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
         train_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, args.in_dataset, 'train'), transform=preprocess),
-                batch_size=batch_size, shuffle=shuffle, **kwargs)
+            datasets.ImageFolder(os.path.join(
+                root, args.in_dataset, 'train'), transform=preprocess),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet-subset":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
+            path = os.path.join('/nobackup', 'ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess, id=args.name)
+        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=True,
+                                 seed=args.seed, transform=preprocess, id=args.name)
         train_loader = torch.utils.data.DataLoader(dataset,
-                batch_size=batch_size, shuffle=shuffle, **kwargs)   
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif args.in_dataset == "ImageNet-dogs":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
+            path = os.path.join('/nobackup', 'ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetDogs(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess)
+        dataset = ImageNetDogs(args.num_imagenet_cls, path,
+                               train=True, seed=args.seed, transform=preprocess)
         train_loader = torch.utils.data.DataLoader(dataset,
-                batch_size=batch_size, shuffle=shuffle, **kwargs)
-    
-    elif args.in_dataset == "bird200":
-        train_loader = torch.utils.data.DataLoader(Cub2011(root, train = True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
-    
-    elif args.in_dataset == "car196":
-        train_loader = torch.utils.data.DataLoader(StanfordCars(root, split = "train", download = True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
-    
-    elif args.in_dataset == "flower102":
-        train_loader = torch.utils.data.DataLoader(Flowers102(root, split = "train", download = True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
-    
-    elif args.in_dataset == "food101":
-        train_loader = torch.utils.data.DataLoader(Food101(root, split = "train", download = True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
-    
-    elif args.in_dataset == "pet37":
-        train_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split = "trainval", download = True, transform=preprocess),
-                    batch_size=batch_size, shuffle=shuffle, **kwargs)
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
 
+    elif args.in_dataset == "bird200":
+        train_loader = torch.utils.data.DataLoader(Cub2011(root, train=True, transform=preprocess),
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
+
+    elif args.in_dataset == "car196":
+        train_loader = torch.utils.data.DataLoader(StanfordCars(root, split="train", download=True, transform=preprocess),
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
+
+    elif args.in_dataset == "flower102":
+        train_loader = torch.utils.data.DataLoader(Flowers102(root, split="train", download=True, transform=preprocess),
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
+
+    elif args.in_dataset == "food101":
+        train_loader = torch.utils.data.DataLoader(Food101(root, split="train", download=True, transform=preprocess),
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
+
+    elif args.in_dataset == "pet37":
+        train_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split="trainval", download=True, transform=preprocess),
+                                                   batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     return train_loader
 
-def set_val_loader(args, preprocess = None):
+
+def set_val_loader(args, preprocess=None):
     # normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
     #                                       std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     # normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)) #for c-10
     # normalize = transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)) #for c-100
     root = args.root_dir
     if preprocess == None:
-        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), 
-                                        std=(0.26862954, 0.26130258, 0.27577711)) # for CLIP
+        normalize = transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073),
+                                         std=(0.26862954, 0.26130258, 0.27577711))  # for CLIP
         preprocess = transforms.Compose([
-        transforms.ToTensor(),
-        normalize
+            transforms.ToTensor(),
+            normalize
         ])
     kwargs = {'num_workers': 4, 'pin_memory': True}
     if args.in_dataset == "CIFAR-10":
         val_loader = torch.utils.data.DataLoader(
-            datasets.CIFAR10(os.path.join(root, 'cifar10'), train=False,download=True, transform=preprocess),
+            datasets.CIFAR10(os.path.join(root, 'cifar10'),
+                             train=False, download=True, transform=preprocess),
             batch_size=args.batch_size, shuffle=False, **kwargs)
-     
+
     elif args.in_dataset == "CIFAR-100":
         val_loader = torch.utils.data.DataLoader(
-            datasets.CIFAR100(os.path.join(root, 'cifar100'), train=False, download=True,transform=preprocess),
+            datasets.CIFAR100(os.path.join(root, 'cifar100'),
+                              train=False, download=True, transform=preprocess),
             batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet','val')
+            path = os.path.join('/nobackup', 'ImageNet', 'val')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012', 'val')
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(path, transform=preprocess),
-                batch_size=args.batch_size, shuffle=False, **kwargs)
-    elif args.in_dataset in  ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
+            datasets.ImageFolder(path, transform=preprocess),
+            batch_size=args.batch_size, shuffle=False, **kwargs)
+    elif args.in_dataset in ["ImageNet10", "ImageNet20", "ImageNet30", "ImageNet100"]:
         val_loader = torch.utils.data.DataLoader(
-                datasets.ImageFolder(os.path.join(root, args.in_dataset, 'val'), transform=preprocess),
-                batch_size=args.batch_size, shuffle=False, **kwargs)
+            datasets.ImageFolder(os.path.join(
+                root, args.in_dataset, 'val'), transform=preprocess),
+            batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "ImageNet-subset":
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
+            path = os.path.join('/nobackup', 'ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess, id=args.name)
+        dataset = ImageNetSubset(args.num_imagenet_cls, path, train=False,
+                                 seed=args.seed, transform=preprocess, id=args.name)
         val_loader = torch.utils.data.DataLoader(dataset,
-                batch_size=args.batch_size, shuffle=False, **kwargs)
-    elif args.in_dataset == 'ImageNet-dogs': 
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
+    elif args.in_dataset == 'ImageNet-dogs':
         if args.server in ['inst-01', 'inst-04']:
-            path = os.path.join('/nobackup','ImageNet')
+            path = os.path.join('/nobackup', 'ImageNet')
         elif args.server in ['galaxy-01', 'galaxy-02']:
             path = os.path.join(root, 'ILSVRC-2012')
-        dataset = ImageNetDogs(args.num_imagenet_cls, path, train=False, seed=args.seed, transform=preprocess)
+        dataset = ImageNetDogs(args.num_imagenet_cls, path,
+                               train=False, seed=args.seed, transform=preprocess)
         # dataset = ImageNetDogs(args.num_imagenet_cls, path, train=True, seed=args.seed, transform=preprocess, id=args.name, save=False)
         val_loader = torch.utils.data.DataLoader(dataset,
-                batch_size=args.batch_size, shuffle=False, **kwargs)
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
     elif args.in_dataset == "bird200":
-        val_loader = torch.utils.data.DataLoader(Cub2011(root, train = False, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=False, **kwargs)
-    
+        val_loader = torch.utils.data.DataLoader(Cub2011(root, train=False, transform=preprocess),
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
+
     elif args.in_dataset == "car196":
-        val_loader = torch.utils.data.DataLoader(StanfordCars(root, split = "test", download = True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=False, **kwargs)
-    
+        val_loader = torch.utils.data.DataLoader(StanfordCars(root, split="test", download=True, transform=preprocess),
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
+
     elif args.in_dataset == "flower102":
-        val_loader = torch.utils.data.DataLoader(Flowers102(root, split = "test", download = True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=False, **kwargs)
-    
+        val_loader = torch.utils.data.DataLoader(Flowers102(root, split="test", download=True, transform=preprocess),
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
+
     elif args.in_dataset == "food101":
-        val_loader = torch.utils.data.DataLoader(Food101(root, split = "test", download = True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=False, **kwargs)
-    
+        val_loader = torch.utils.data.DataLoader(Food101(root, split="test", download=True, transform=preprocess),
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
+
     elif args.in_dataset == "pet37":
-        val_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split = "test", download = True, transform=preprocess),
-                    batch_size=args.batch_size, shuffle=False, **kwargs)
+        val_loader = torch.utils.data.DataLoader(OxfordIIITPet(root, split="test", download=True, transform=preprocess),
+                                                 batch_size=args.batch_size, shuffle=False, **kwargs)
 
     return val_loader
 
+
 def set_model(args):
-    
+
     # create model
     if args.model in ['resnet18', 'resnet34', 'resnet50', 'resnet101']:
         pass
         # model = SupCEHeadResNet(name=args.model, feat_dim = args.feat_dim, num_classes = args.n_cls)
 
-
     # get the number of model parameters
     print('Number of model parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()])))
 
-    torch.cuda.set_device(args.gpus[0]) # sets the default GPU and in order to use multi-GPU
+    # sets the default GPU and in order to use multi-GPU
+    torch.cuda.set_device(args.gpus[0])
     # torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
-    if len(args.gpus)> 1:
+    if len(args.gpus) > 1:
         model = nn.DataParallel(model.to(args.gpus[0]), args.gpus)
     else:
         model = model.cuda()
@@ -246,8 +259,8 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'loss {loss.val:.3f} ({loss.avg:.3f})\t'
                   'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                   epoch, idx + 1, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1))
+                      epoch, idx + 1, len(train_loader), batch_time=batch_time,
+                      data_time=data_time, loss=losses, top1=top1))
             sys.stdout.flush()
 
     return losses.avg, top1.avg
@@ -287,8 +300,8 @@ def validate(val_loader, model, classifier, criterion, opt):
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                       idx, len(val_loader), batch_time=batch_time,
-                       loss=losses, top1=top1))
+                          idx, len(val_loader), batch_time=batch_time,
+                          loss=losses, top1=top1))
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
     return losses.avg, top1.avg
