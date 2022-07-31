@@ -44,9 +44,6 @@ def obtain_ImageNet_classes(loc, option = 'clean'):
     return imagenet_cls
 
 def obtain_ImageNet10_classes(loc = None):
-    # class_dict = {'plane': 'n04552348', 'car': 'n04285008', 'bird': 'n01530575', 'cat':'n02123597', 
-    #     'antelope' : 'n02422699', 'dog':'n02107574', 'frog':'n01641577',  'snake':'n01728572', 
-    #     'ship':'n03095699', 'truck':'n03417042'}
 
     class_dict =   {"warplane": "n04552348", "sports car":"n04285008", 
         'brambling bird':'n01530575', "Siamese cat": 'n02123597', 
@@ -69,6 +66,7 @@ def obtain_ImageNet20_classes(loc = None):
 
 
 def obtain_ImageNet30_classes():
+
     all_labels = ['stingray', 'american_alligator', 'dragonfly', 'airliner', 
     'ambulance', 'banjo', 'barn', 'bikini', 'rotary_dial_telephone', 'digital_clock',
      'dumbbell', 'forklift', 'goblet', 'grand_piano', 'hourglass', 'manhole_cover', 
@@ -91,34 +89,6 @@ def obtain_ImageNet100_classes(loc):
         # class_name_set = class_index.values()
 
     class_name_set = [x.replace('_', ' ') for x in class_name_set]
-    return class_name_set
-
-def obtain_ImageNet_subset_classes(loc):
-    # sort by values
-    with open(os.path.join(loc, 'class_list.txt')) as f:
-        class_set = [line.strip() for line in f.readlines()]
-
-    class_name_set = []
-    with open('data/ImageNet/imagenet_class_index.json') as file: 
-        class_index_raw = json.load(file)
-        class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
-        class_name_set = [class_index[c] for c in class_set]
-    class_name_set = [x.replace('_', ' ') for x in class_name_set]
-
-    return class_name_set
-
-def obtain_ImageNet_dogs_classes(args, loc):
-    # sort by values
-    with open(os.path.join(loc, f'in_{args.n_cls}_seed_{args.seed}', 'class_list.txt')) as f:
-        class_set = [line.strip() for line in f.readlines()[0:args.num_imagenet_cls]]
-
-    class_name_set = []
-    with open('data/ImageNet/imagenet_class_index.json') as file: 
-        class_index_raw = json.load(file)
-        class_index = {cid: class_name for cid, class_name in class_index_raw.values()}
-        class_name_set = [class_index[c] for c in class_set]
-    class_name_set = [x.replace('_', ' ') for x in class_name_set]
-
     return class_name_set
 
 def get_num_cls(args):    
