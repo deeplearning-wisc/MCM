@@ -90,9 +90,9 @@ Here are the commands to reproduce numerical results of our paper, note that we 
 ## Table 1
 
 ```sh
-eval_ood_detection.py \
+python eval_ood_detection.py \
     --in_dataset={ImageNet10, ImageNet20, ImageNet100, bird200, car196, flower102, food101/pet37} \
-    --out_dataset=iNat SUN Places DTD
+    --out_dataset=iNat SUN Places DTD \
     --model=CLIP --CLIP_variant=ViT-B/16 \
     --score=MCM \
     --batch_size=512
@@ -102,24 +102,24 @@ eval_ood_detection.py \
 
 ```sh
 # zero shot
-eval_ood_detection.py \
-    --in_dataset=ImageNet --model=CLIP --CLIP_variant={ViT-B/16, ViT-L/14}
-    --score=MCM
+python eval_ood_detection.py \
+    --in_dataset=ImageNet --model=CLIP --CLIP_variant={ViT-B/16, ViT-L/14} \
+    --score=MCM \
     --batch_size=512
 
 # Fort et al, MSP
-eval_ood_detection.py \
-    --in_dataset=ImageNet --model=ViT --CLIP_variant={ViT-B/16, ViT-L/14}
-    --score={Maha, MSP}
+python eval_ood_detection.py \
+    --in_dataset=ImageNet --model=ViT --CLIP_variant={ViT-B/16, ViT-L/14} \
+    --score={Maha, MSP} \
     --batch_size=512
 ```
 
 ## Table 3
 
 ```
-eval_ood_detection.py \
-    --in_dataset={ImageNet-10, ImageNet-20, Waterbirds}
-    --out_dataset={ImageNet-20, ImageNet-10, Waterbirds-Spurious-OOD}
-    --model=CLIP --CLIP_variant=ViT-B/16
+python eval_ood_detection.py \
+    --in_dataset={ImageNet-10, ImageNet-20, Waterbirds} \
+    --out_dataset={ImageNet-20, ImageNet-10, Waterbirds-Spurious-OOD} \
+    --model=CLIP --CLIP_variant=ViT-B/16 \
     --score={MSP, Maha, MCM}
 ```
