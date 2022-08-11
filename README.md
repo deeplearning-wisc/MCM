@@ -59,10 +59,10 @@ The main entry point for running OOD detection experiments is `eval_ood_detectio
 - `--gpu`: The indexes of the GPUs to use. For example `--gpu=0 1 2`.
 - `--in_dataset`: The in-distribution dataset.
   - Accepts: `CIFAR-10`, `CIFAR-100`, `ImageNet`, `ImageNet10`, `ImageNet20`, `ImageNet100`, `bird200`, `car196`, `flower102`, `food101` , `pet37`,
-- `--out_datasets`: The out-of-distribution datasets, we accept multiple ones.
-  - Accepts: `iNat`, `SUN`, `Places`, `DTD`, `ImageNet10`, `ImageNet20`
+  <!-- - `--out_datasets`: The out-of-distribution datasets, we accept multiple ones.
+  - Accepts: `iNat`, `SUN`, `Places`, `DTD`, `ImageNet10`, `ImageNet20` -->
 - `-b`, `--batch_size`: Mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip].
-- `--epoch`: Number of epochs to run.
+- `--epoch`: Number of epochs to run if doing linear probe.
 - `--model`: The model architecture to extract features with.
   - Accepts: `CLIP`, `CLIP-Linear`, `ViT`, `ViT-Linear`. (`-Linear` is the linear probe version of the model.)
 - `--CLIP_variant`: Specifies the pretrained CLIP encoder to use.
