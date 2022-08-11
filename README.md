@@ -16,7 +16,7 @@ conda activate clip-ood
 conda install pytorch==1.8.0 torchvision==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
 
 # Install dependencies
-pip install -r requirments.txt
+pip install -r requirements.txt
 ```
 
 # Data Preparation
