@@ -10,7 +10,6 @@ __pycache__/
 __pypackages__/
 
 # results file
-*.png
 *.jpeg
 *.pdf
 *.npy
