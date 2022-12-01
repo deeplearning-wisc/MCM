@@ -11,6 +11,7 @@ __pypackages__/
 
 # results file
 *.png
+*.jpeg
 *.pdf
 *.npy
 plot_temp/
@@ -30,6 +31,7 @@ img_templates/
 img_templates/all_feat/
 #results
 datasets/
+datasets_inst/
 results/
 linear_probe_logs/
 train_results/
