@@ -8,7 +8,7 @@ Recognizing out-of-distribution (OOD) samples is critical for machine learning s
 
 ### Illustration
 
-![Arch_figure](figures/Arch_figure.png)
+![Arch_figure](readme_figs/Arch_figure.png)
 
 
 
