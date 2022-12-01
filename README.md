@@ -48,7 +48,7 @@ The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net
 
 We use the large-scale OOD datasets [iNaturalist](https://arxiv.org/abs/1707.06642), [SUN](https://vision.princeton.edu/projects/2010/SUN/), [Places](https://arxiv.org/abs/1610.02055), and [Texture](https://arxiv.org/abs/1311.3618) curated by [Huang et al. 2021](https://arxiv.org/abs/2105.01879). Please follow instruction from the this [repository](https://github.com/deeplearning-wisc/large_scale_ood#out-of-distribution-dataset) to download the subsampled datasets where semantically overlapped classes with ImageNet-1k are removed.
 
-The overall file structure:
+The overall file structure is as follows:
 
 ```
 MCM
@@ -56,9 +56,12 @@ MCM
     |-- ImageNet
     |-- ImageNet10
     |-- ImageNet20
-    |-- CUB-200
-    |-- Food-101
-    |-- iNaturalist
+    |-- ImageNet100
+    |-- ImageNet_OOD_dataset
+        |-- iNaturalist
+        |-- dtd
+        |-- SUN
+        |-- Places
     ...
 ```
 
