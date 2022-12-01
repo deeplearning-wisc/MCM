@@ -1,125 +1,105 @@
-# Delving into OOD Detection with Vision-Language Representations
+# Delving into Out-of-distribution Detection with Vision-Language Representations
 
-Recognizing out-of-distribution (OOD) samples is critical for machine learning systems deployed in the open world. The vast majority of OOD detection methods are driven by a single modality (e.g., either vision or language), leaving the rich information in multi-modal representations untapped. Inspired by the recent success of vision-language pre-training, this paper enriches the landscape of OOD detection from a single-modal to a multi-modal regime. Particularly, we propose Maximum Concept Matching (MCM), a simple yet effective zero-shot OOD detection method based on aligning visual features with textual concepts. We contribute in-depth analysis and theoretical insights to understand the effectiveness of MCM. Extensive experiments demonstrate that our proposed MCM achieves superior performance on a wide variety of real-world tasks. MCM with vision-language features outperforms a common baseline with pure visual features on a hard OOD task with semantically similar classes by 56.60% (FPR95).
+This codebase provides a Pytorch implementation for the paper Delving into Out-Of-Distribution Detection with Vision-Language Representations at NeurIPS 2022.
 
-# Links
+### Abstract
 
-ArXiv
+Recognizing out-of-distribution (OOD) samples is critical for machine learning systems deployed in the open world. The vast majority of OOD detection methods are driven by a single modality (e.g., either vision or language), leaving the rich information in multi-modal representations untapped. Inspired by the recent success of vision-language pre-training, this paper enriches the landscape of OOD detection from a single-modal to a multi-modal regime. Particularly, we propose Maximum Concept Matching (MCM), a simple yet effective zero-shot OOD detection method based on aligning visual features with textual concepts. We contribute in-depth analysis and theoretical insights to understand the effectiveness of MCM. Extensive experiments demonstrate that MCM achieves superior performance on a wide variety of real-world tasks. MCM with vision-language features outperforms a common baseline with pure visual features on a hard OOD task with semantically similar classes by 13.1% (AUROC). 
 
-# Environment Setup
+### Illustration
 
-```sh
-conda create -n clip-ood python=3.7 -y
-conda activate clip-ood
+![Arch_figure](figures/Arch_figure.png)
 
-# Install GPU version of pytorch, please verify your own CUDA toolkit version
-conda install pytorch==1.8.0 torchvision==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
 
-# Install dependencies
-pip install -r requirements.txt
-```
+
+# Set up
+
+## Required Packages
+
+Our experiments are conducted on Ubuntu Linux 20.04 with Python 3.8 and Pytorch 1.10. Besides, the following packages are required to be installed:
+
+- [transformers](https://huggingface.co/docs/transformers/installation)
+- scipy
+- matplotlib
+- seaborn 
+
+## Checkpoints
+
+We use the publicly available checkpoints from Hugging Face where the ViT model is pre-trained on ImageNet-21k and fine-tuned on ImageNet-1k. For example, the checkpoint for ViT-B is available [here](https://huggingface.co/google/vit-base-patch16-224). 
+
+For CLIP models, our reported results are based on checkpoints provided by Hugging Face for [CLIP-B](https://huggingface.co/openai/clip-vit-base-patch16) and [CLIP-L](https://huggingface.co/openai/clip-vit-large-patch14). Similar results can be obtained with checkpoints in the codebase by [OpenAI](https://github.com/openai/CLIP). 
+
+
 
 # Data Preparation
 
-For complete information, refer to Appendix B.3 of the paper. The default dataset location is `./datasets/`, which can be changed in `settings.yaml`.
+For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`, which can be changed in `settings.yaml`.
 
 ## In-distribution Datasets
 
-- [`CUB-200`](http://www.vision.caltech.edu/datasets/cub_200_2011/), [`Standford-Cars`](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [`Food-101`](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/), [`Oxford-Pet`](https://www.robots.ox.ac.uk/~vgg/data/pets/)
-- [`ImageNet`](https://image-net.org/challenges/LSVRC/2012/index.php#), [`ImageNet-10`](https://github.com/alvinmingwisc/CLIP_OOD/blob/clean-up/dataloaders/ImageNet-10-classlist.csv), [`ImageNet-20`](https://github.com/alvinmingwisc/CLIP_OOD/blob/clean-up/dataloaders/ImageNet-20-classlist.csv)
+We consider the following (in-distribution) datasets:
 
-Please download the full ImageNet dataset from the link; the other datasets can be automatically downloaded as the experiments run.
+- [`CUB-200`](http://www.vision.caltech.edu/datasets/cub_200_2011/), [`Standford-Cars`](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [`Food-101`](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/), [`Oxford-Pet`](https://www.robots.ox.ac.uk/~vgg/data/pets/)
+- `ImageNet-1k`, `ImageNet-10`, `ImageNet-20`, `ImageNet-100`
+
+The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. The other datasets will be automatically downloaded.
 
 ## Out-of-Distribution Datasets
 
-- [iNaturalist](https://arxiv.org/abs/1707.06642), [SUN](https://vision.princeton.edu/projects/2010/SUN/), [Places](https://arxiv.org/abs/1610.02055), [Texture](https://arxiv.org/abs/1311.3618)
-
-We use the large scale OOD datasets curated by [Huang et al. 2021](https://arxiv.org/abs/2105.01879). Please follow instruction from the this [repository](https://github.com/deeplearning-wisc/large_scale_ood#out-of-distribution-dataset) to download the cleaned datasets, where overlaps with ImageNet are removed.
+We use the large-scale OOD datasets [iNaturalist](https://arxiv.org/abs/1707.06642), [SUN](https://vision.princeton.edu/projects/2010/SUN/), [Places](https://arxiv.org/abs/1610.02055), and [Texture](https://arxiv.org/abs/1311.3618) curated by [Huang et al. 2021](https://arxiv.org/abs/2105.01879). Please follow instruction from the this [repository](https://github.com/deeplearning-wisc/large_scale_ood#out-of-distribution-dataset) to download the subsampled datasets where semantically overlapped classes with ImageNet-1k are removed.
 
 The overall file structure:
 
 ```
-CLIP_OOD
+MCM
 |-- datasets
     |-- ImageNet
+    |-- ImageNet10
+    |-- ImageNet20
     |-- CUB-200
     |-- Food-101
     |-- iNaturalist
     ...
 ```
 
-# Experiments
+# Quick Start
 
-## OOD Detection
+The main script for evaluating OOD detection performance is `eval_ood_detection.py`. Here are the list of arguments:
 
-The main entry point for running OOD detection experiments is `eval_ood_detection.py`. Here are the list of arguments:
+- `--name`: A unique ID for the experiment, can be any string
+- `--score`: The OOD detection score, which accepts any of the following:
+  - `MCM`: Maximum Concept Matching score
+  - `energy`: The [Energy score](https://proceedings.neurips.cc/paper/2020/hash/f5496252609c43eb8a3d147ab9b9c006-Abstract.html)
+  - `max-logit`: Max Logit score (i.e., cosine similarity without softmax)
+  - `entropy`: Negative entropy of softmax scaled cosine similarities
+  - `var`: Variance of cosine similarities
+- `--seed`: A random seed for the experiments
+- `--gpu`: The index of the GPU to use. For example `--gpu=0`
+- `--in_dataset`: The in-distribution dataset
+  - Accepts:  `ImageNet`, `ImageNet10`, `ImageNet20`, `ImageNet100`, `bird200`, `car196`, `flower102`, `food101` , `pet37`,
+- `-b`, `--batch_size`: Mini-batch size
+- `--CLIP_ckpt`: Specifies the pretrained CLIP encoder to use
+  - Accepts: `ViT-B/32`, `ViT-B/16`, `ViT-L/14`.
 
-- `--name`: A unique ID for the experiment, can be any string.
-- `--seed`: Random seed for the experiments. (We used 4.)
-- `--gpu`: The indexes of the GPUs to use. For example `--gpu=0 1 2`.
-- `--in_dataset`: The in-distribution dataset.
-  - Accepts: `CIFAR-10`, `CIFAR-100`, `ImageNet`, `ImageNet10`, `ImageNet20`, `ImageNet100`, `bird200`, `car196`, `flower102`, `food101` , `pet37`,
-  <!-- - `--out_datasets`: The out-of-distribution datasets, we accept multiple ones.
-  - Accepts: `iNat`, `SUN`, `Places`, `DTD`, `ImageNet10`, `ImageNet20` -->
-- `-b`, `--batch_size`: Mini-batch size; 1 for nouns score; 75 for odin_logits; 512 for other scores [clip].
-- `--epoch`: Number of epochs to run if doing linear probe.
-- `--model`: The model architecture to extract features with.
-  - Accepts: `CLIP`, `CLIP-Linear`, `ViT`, `ViT-Linear`. (`-Linear` is the linear probe version of the model.)
-- `--CLIP_variant`: Specifies the pretrained CLIP encoder to use.
-  - Accepts: `ViT-B/32`, `ViT-B/16`, `RN50x4`, `ViT-L/14`.
-- `--classifier_ckpt`: Specifies the linear probe classifier to load.
-- `--score`: The OOD detection score, we accept any of the following:
+The OOD detection results will be generated and stored in  `results/in_dataset/score/CLIP_ckpt/name/`. 
 
-  - `MCM`: Maximum Concept Matching, Our main result; Correspond to Table 1, 2 in our paper.
-  - `Maha`: [Mahalanobis score](https://arxiv.org/abs/1807.03888), Correspond to figure 5 in the paper. First time running wil generate class-wise means and precision matrices used in calculation.
-  - `energy`: [Energy based score](https://proceedings.neurips.cc/paper/2020/hash/f5496252609c43eb8a3d147ab9b9c006-Abstract.html), Correspond to Table 6 in our paper.
-  - `max-logit`: Cosine similarity without softmax.
-  - `entropy`, `var`, `scaled`: Respectively: ngative entropy of softmax scaled cosine similarities, variance of cosine similarities, and the scaled difference between the largest and second largest cosine similarities. Correspond to Table 7 in our paper.
-  - `MSP`: [Maximum Softmax Probability](https://arxiv.org/abs/1610.02136); Classic baseline score.
-
-The results are stored in the folder `./results/`. The format is a csv.
-
-## Fine-tuning
-
-[TODO]
-
-# Reproduction
-
-Here are the commands to reproduce numerical results of our paper, note that we ran our experiments on a single GTX 2080 GPU.
-
-## Table 1
+We provide bash scripts to help reproduce numerical results of our paper and facilitate future research.  For example, to evaluate the performance of MCM score on ImageNet-1k, with an experiment name `eval_ood`: 
 
 ```sh
-python eval_ood_detection.py \
-    --in_dataset={ImageNet10, ImageNet20, ImageNet100, bird200, car196, flower102, food101/pet37} \
-    --out_dataset=iNat SUN Places DTD \
-    --model=CLIP --CLIP_variant=ViT-B/16 \
-    --score=MCM \
-    --batch_size=512
+sh scripts/eval_mcm.sh eval_ood ImageNet MCM
 ```
 
-## Table 2
 
-```sh
-# zero shot
-python eval_ood_detection.py \
-    --in_dataset=ImageNet --model=CLIP --CLIP_variant={ViT-B/16, ViT-L/14} \
-    --score=MCM \
-    --batch_size=512
 
-# Fort et al, MSP
-python eval_ood_detection.py \
-    --in_dataset=ImageNet --model=ViT --CLIP_variant={ViT-B/16, ViT-L/14} \
-    --score={Maha, MSP} \
-    --batch_size=512
-```
+### Citation
 
-## Table 3
+If you find our work useful, please consider citing our paper:
 
 ```
-python eval_ood_detection.py \
-    --in_dataset={ImageNet-10, ImageNet-20, Waterbirds} \
-    --out_dataset={ImageNet-20, ImageNet-10, Waterbirds-Spurious-OOD} \
-    --model=CLIP --CLIP_variant=ViT-B/16 \
-    --score={MSP, Maha, MCM}
+@inproceedings{ming2022delving,
+  title={Delving into Out-of-Distribution Detection with Vision-Language Representations},
+  author={Ming, Yifei and Cai, Ziyang and Gu, Jiuxiang and Sun, Yiyou and Li, Wei and Li, Yixuan},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2022}
+}
 ```
