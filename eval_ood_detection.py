@@ -19,7 +19,7 @@ def process_args():
     parser.add_argument('--in_dataset', default='ImageNet20', type=str,
                         choices=['ImageNet', 'ImageNet10', 'ImageNet20', 'ImageNet100',
                                   'pet37', 'food101', 'car196', 'bird200'], help='in-distribution dataset')
-    parser.add_argument('--root-dir', default="datasets_inst", type=str,
+    parser.add_argument('--root-dir', default="datasets", type=str,
                         help='root dir of datasets')
     parser.add_argument('--name', default="release_test",
                         type=str, help="unique ID for the run")
