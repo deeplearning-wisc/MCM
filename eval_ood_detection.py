@@ -16,12 +16,12 @@ def process_args():
     parser = argparse.ArgumentParser(description='Evaluates MCM Score for CLIP',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # setting for each run
-    parser.add_argument('--in_dataset', default='ImageNet20', type=str,
+    parser.add_argument('--in_dataset', default='ImageNet', type=str,
                         choices=['ImageNet', 'ImageNet10', 'ImageNet20', 'ImageNet100',
                                   'pet37', 'food101', 'car196', 'bird200'], help='in-distribution dataset')
     parser.add_argument('--root-dir', default="datasets", type=str,
                         help='root dir of datasets')
-    parser.add_argument('--name', default="release_test",
+    parser.add_argument('--name', default="eval_ood",
                         type=str, help="unique ID for the run")
     parser.add_argument('--seed', default=5, type=int, help="random seed")
     parser.add_argument('--gpu', default=0, type = int,
