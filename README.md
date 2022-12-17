@@ -33,7 +33,7 @@ For CLIP models, our reported results are based on checkpoints provided by Huggi
 
 # Data Preparation
 
-For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`, which can be changed in `settings.yaml`.
+For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`.
 
 ## In-distribution Datasets
 
@@ -42,7 +42,7 @@ We consider the following (in-distribution) datasets:
 - [`CUB-200`](http://www.vision.caltech.edu/datasets/cub_200_2011/), [`Standford-Cars`](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [`Food-101`](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/), [`Oxford-Pet`](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 - `ImageNet-1k`, `ImageNet-10`, `ImageNet-20`, `ImageNet-100`
 
-The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. The other datasets will be automatically downloaded.
+The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. CUB-200 can be downloaded from the link above. The other datasets will be automatically downloaded.
 
 ## Out-of-Distribution Datasets
 
