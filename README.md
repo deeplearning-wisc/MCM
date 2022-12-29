@@ -52,7 +52,7 @@ OOD samples that are semantically similar to ID samples are particularly challen
 
 Therefore, to evaluate hard OOD detection tasks in realistic settings, we consider ImageNet-10 (ID) vs. ImageNet-20 (OOD) and vice versa. The pair consists of *high-resolution* images with semantically similar categories.  For example, we construct ImageNet-10 that mimics the class distribution of CIFAR-10. For hard OOD evaluation, we curate ImageNet-20, which consists of 20 classes semantically similar to ImageNet-10 (e.g., dog (ID) vs. wolf (OOD)).
 
-To curate ImageNet-10, 20, and 100, the following script can be used:
+To create ImageNet-10, 20, and 100, the following script can be used:
 
 ```python
 # ImageNet-10 
