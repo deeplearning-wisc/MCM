@@ -46,7 +46,7 @@ The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net
 
 
 
-### Realistic semantically hard ID and OOD Datasets 
+### Realistic semantically hard ID and OOD datasets 
 
 OOD samples that are semantically similar to ID samples are particularly challenging for OOD detection algorithms. However, it is common for the community to use CIFAR-10 (ID) and CIFAR-100 (OOD) as benchmark ID-OOD pairs, which contain low-resolution images that are less realistic.  
 
