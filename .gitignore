@@ -13,6 +13,7 @@ __pypackages__/
 *.jpeg
 *.pdf
 *.npy
+!.imagenet_class_clean.npy
 plot_temp/
 *.pt
 # Environments

@@ -12,7 +12,7 @@ Recognizing out-of-distribution (OOD) samples is critical for machine learning s
 
 
 
-# Set up
+# Setup
 
 ## Required Packages
 
@@ -33,7 +33,7 @@ For CLIP models, our reported results are based on checkpoints provided by Huggi
 
 # Data Preparation
 
-For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`.
+For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`, which can be changed in `settings.yaml`.
 
 ## In-distribution Datasets
 
@@ -42,7 +42,30 @@ We consider the following (in-distribution) datasets:
 - [`CUB-200`](http://www.vision.caltech.edu/datasets/cub_200_2011/), [`Standford-Cars`](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [`Food-101`](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/), [`Oxford-Pet`](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 - `ImageNet-1k`, `ImageNet-10`, `ImageNet-20`, `ImageNet-100`
 
-The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. CUB-200 can be downloaded from the link above. The other datasets will be automatically downloaded.
+The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. The other datasets will be automatically downloaded.
+
+
+
+### Realistic semantically hard ID and OOD Datasets 
+
+OOD samples that are semantically similar to ID samples are particularly challenging for OOD detection algorithms. However, it is common for the community to use CIFAR-10 (ID) and CIFAR-100 (OOD) as benchmark ID-OOD pairs, which contain low-resolution images that are less realistic.  
+
+Therefore, to evaluate hard OOD detection tasks in realistic settings, we consider ImageNet-10 (ID) vs. ImageNet-20 (OOD) and vice versa. The pair consists of *high-resolution* images with semantically similar categories.  For example, we construct ImageNet-10 that mimics the class distribution of CIFAR-10. For hard OOD evaluation, we curate ImageNet-20, which consists of 20 classes semantically similar to ImageNet-10 (e.g., dog (ID) vs. wolf (OOD)).
+
+To curate ImageNet-10, 20, and 100, the following script can be used:
+
+```python
+# ImageNet-10 
+python create_imagenet_subset.py --in_dataset ImageNet10 --src-dir datasets/ImageNet --dst-dir datasets
+# ImageNet-20
+python create_imagenet_subset.py --in_dataset ImageNet20 --src-dir datasets/ImageNet --dst-dir datasets
+# ImageNet-100
+python create_imagenet_subset.py --in_dataset ImageNet100 --src-dir datasets/ImageNet --dst-dir datasets
+```
+
+
+
+
 
 ## Out-of-Distribution Datasets
 
