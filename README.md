@@ -1,6 +1,6 @@
 # Delving into Out-of-distribution Detection with Vision-Language Representations
 
-This codebase provides a Pytorch implementation for the paper Delving into Out-Of-Distribution Detection with Vision-Language Representations at NeurIPS 2022.
+This codebase provides a Pytorch implementation for the paper [Delving into Out-Of-Distribution Detection with Vision-Language Representations](https://openreview.net/forum?id=KnCS9390Va) at NeurIPS 2022.
 
 ### Abstract
 
