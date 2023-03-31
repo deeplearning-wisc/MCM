@@ -33,7 +33,7 @@ For CLIP models, our reported results are based on checkpoints provided by Huggi
 
 # Data Preparation
 
-For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`, which can be changed in `settings.yaml`.
+For complete information, refer to Appendix B in the paper. The default dataset location is `./datasets/`.
 
 ## In-distribution Datasets
 
