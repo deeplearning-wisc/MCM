@@ -16,12 +16,9 @@ Recognizing out-of-distribution (OOD) samples is critical for machine learning s
 
 ## Required Packages
 
-Our experiments are conducted on Ubuntu Linux 20.04 with Python 3.8 and Pytorch 1.10. Besides, the following packages are required to be installed:
+Our experiments are conducted on Ubuntu Linux 20.04 with Python 3.8 and Pytorch 1.10. Besides, the following commonly used packages are required to be installed:
 
-- [transformers](https://huggingface.co/docs/transformers/installation)
-- scipy
-- matplotlib
-- seaborn 
+- [transformers](https://huggingface.co/docs/transformers/installation), scipy, scikit-learn, matplotlib, seaborn, pandas, tdqm. 
 
 ## Checkpoints
 
