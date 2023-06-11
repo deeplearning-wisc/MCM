@@ -36,10 +36,11 @@ def process_args():
     parser.add_argument('--score', default='MCM', type=str, choices=[
         'MCM', 'energy', 'max-logit', 'entropy', 'var', 'maha'], help='score options')
     # for Mahalanobis score
+    parser.add_argument('--feat_dim', type=int, default=512, help='feat dim； 512 for ViT-B and 768 for ViT-L')
     parser.add_argument('--normalize', type = bool, default = False, help='whether use normalized features for Maha score')
     parser.add_argument('--generate', type = bool, default = True, help='whether to generate class-wise means or read from files for Maha score')
     parser.add_argument('--template_dir', type = str, default = 'img_templates', help='the loc of stored classwise mean and precision matrix')
-    parser.add_argument('--subset', default = True, type =bool, help = "whether uses a subset of samples in the training set")
+    parser.add_argument('--subset', default = False, type =bool, help = "whether uses a subset of samples in the training set")
     parser.add_argument('--max_count', default = 250, type =int, help = "how many samples are used to estimate classwise mean and precision matrix")
     args = parser.parse_args()
 
