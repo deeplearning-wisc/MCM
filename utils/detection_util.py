@@ -240,7 +240,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
             elif args.score == 'entropy':  
                 # raw_value = entropy(smax)
                 # filtered = raw_value[raw_value > -1e-5]
-                _score.append(entropy(smax)) 
+                _score.append(entropy(smax, axis = 1)) 
                 # _score.append(filtered) 
             elif args.score == 'var':
                 _score.append(-np.var(smax, axis = 1))
