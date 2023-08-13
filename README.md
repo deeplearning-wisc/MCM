@@ -11,6 +11,8 @@ Recognizing out-of-distribution (OOD) samples is critical for machine learning s
 ![Arch_figure](readme_figs/Arch_figure.png)
 
 
+### Update
+[Aug 12] 🔥 If you are interested in how fine-tuning impacts OOD detection for vision-language models, feel free to check out our recent work [How Does Fine-Tuning Impact Out-of-Distribution Detection for Vision-Language Models?](https://arxiv.org/abs/2306.06048) to appear on International Journal of Computer Vision (IJCV), 2023. The code will be released in a separate repo. 
 
 # Setup
 
@@ -39,7 +41,7 @@ We consider the following (in-distribution) datasets:
 - [`CUB-200`](http://www.vision.caltech.edu/datasets/cub_200_2011/), [`Standford-Cars`](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [`Food-101`](https://data.vision.ee.ethz.ch/cvl/datasets_extra/food-101/), [`Oxford-Pet`](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 - `ImageNet-1k`, `ImageNet-10`, `ImageNet-20`, `ImageNet-100`
 
-The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the classnames and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. The other datasets will be automatically downloaded.
+The ImageNet-1k dataset (ILSVRC-2012) can be downloaded [here](https://image-net.org/challenges/LSVRC/2012/index.php#). ImageNet-10, ImageNet-20, and ImageNet-100 can be generated given the class names and IDs provided in `data/ImageNet10/ImageNet-10-classlist.csv` , `data/ImageNet20/ImageNet-20-classlist.csv`, and `data/ImageNet100/class_list.txt` respectively. The other datasets will be automatically downloaded.
 
 
 
@@ -101,12 +103,12 @@ The main script for evaluating OOD detection performance is `eval_ood_detection.
 - `--in_dataset`: The in-distribution dataset
   - Accepts:  `ImageNet`, `ImageNet10`, `ImageNet20`, `ImageNet100`, `bird200`, `car196`, `flower102`, `food101` , `pet37`,
 - `-b`, `--batch_size`: Mini-batch size
-- `--CLIP_ckpt`: Specifies the pretrained CLIP encoder to use
+- `--CLIP_ckpt`: Specifies the pre-trained CLIP encoder to use
   - Accepts: `ViT-B/32`, `ViT-B/16`, `ViT-L/14`.
 
 The OOD detection results will be generated and stored in  `results/in_dataset/score/CLIP_ckpt/name/`. 
 
-We provide bash scripts to help reproduce numerical results of our paper and facilitate future research.  For example, to evaluate the performance of MCM score on ImageNet-1k, with an experiment name `eval_ood`: 
+We provide bash scripts to help reproduce the numerical results of our paper and facilitate future research.  For example, to evaluate the performance of MCM score on ImageNet-1k, with an experiment name `eval_ood`: 
 
 ```sh
 sh scripts/eval_mcm.sh eval_ood ImageNet MCM
@@ -124,5 +126,14 @@ If you find our work useful, please consider citing our paper:
   author={Ming, Yifei and Cai, Ziyang and Gu, Jiuxiang and Sun, Yiyou and Li, Wei and Li, Yixuan},
   booktitle={Advances in Neural Information Processing Systems},
   year={2022}
+}
+```
+
+```
+@article{ming2023finetune,
+  title={How Does Fine-Tuning Impact Out-of-Distribution Detection for Vision-Language Models?},
+  author={Ming, Yifei and Li, Yixuan},
+  journal={International Journal of Computer Vision},
+  year={2023}
 }
 ```
