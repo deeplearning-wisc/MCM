@@ -12,7 +12,7 @@ Recognizing out-of-distribution (OOD) samples is critical for machine learning s
 
 
 ### Update
-[Aug 12] 🔥 If you are interested in how fine-tuning impacts OOD detection for vision-language models, feel free to check out our recent work [How Does Fine-Tuning Impact Out-of-Distribution Detection for Vision-Language Models?](https://arxiv.org/abs/2306.06048) to appear on International Journal of Computer Vision (IJCV), 2023. The code will be released in a separate repo. 
+[Aug 12] 🔥 If you are interested in how **parameter-efficient fine-tuning** impacts OOD detection for vision-language models, feel free to check out our recent work [How Does Fine-Tuning Impact Out-of-Distribution Detection for Vision-Language Models?](https://arxiv.org/abs/2306.06048) to appear on International Journal of Computer Vision (IJCV), 2023. The code will be released in a separate repo. 
 
 # Setup
 
