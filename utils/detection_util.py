@@ -206,7 +206,7 @@ def get_Mahalanobis_score(args, net, test_loader, classwise_mean, precision, in_
         
     return np.asarray(Mahalanobis_score_all, dtype=np.float32)
 
-def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax = True):
+def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False):
     '''
     used for scores based on img-caption product inner products: MIP, entropy, energy score. 
     '''
@@ -230,10 +230,10 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                                                 attention_mask = text_inputs['attention_mask'].cuda()).float()
                 text_features /= text_features.norm(dim=-1, keepdim=True)   
                 output = image_features @ text_features.T
-            if softmax:
-                smax = to_np(F.softmax(output/ args.T, dim=1))
+            if args.score == 'max-logit':
+                smax = to_np(output)
             else:
-                smax = to_np(output/ args.T)
+                smax = to_np(F.softmax(output/ args.T, dim=1))
             if args.score == 'energy':
                 #Energy = - T * logsumexp(logit_k / T), by default T = 1 in https://arxiv.org/pdf/2010.03759.pdf
                 _score.append(-to_np((args.T*torch.logsumexp(output / args.T, dim=1))))  #energy score is expected to be smaller for ID
@@ -244,7 +244,7 @@ def get_ood_scores_clip(args, net, loader, test_labels, in_dist=False, softmax =
                 # _score.append(filtered) 
             elif args.score == 'var':
                 _score.append(-np.var(smax, axis = 1))
-            elif args.score == 'MCM':
+            elif args.score in ['MCM', 'max-logit']:
                 _score.append(-np.max(smax, axis=1)) 
     return concat(_score)[:len(loader.dataset)].copy()   
 
