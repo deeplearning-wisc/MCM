@@ -62,7 +62,7 @@ python create_imagenet_subset.py --in_dataset ImageNet20 --src-dir datasets/Imag
 python create_imagenet_subset.py --in_dataset ImageNet100 --src-dir datasets/ImageNet --dst-dir datasets
 ```
 
-
+**Remarks**: As ImageNet-10 is less fine-grained than ImageNet-1k, the class n02422699 is referred to as antelope, originally named 'impala' (medium-sized antelopes) in ImageNet-1k, and class n02389026 as horse, originally named 'sorrel' (lighter-shade red horses) in ImageNet-1k. The original names from ImageNet-1k can be used if preferred.
 
 
 
